@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/*  KJ Studio palette — KJ brand blue + lilac→blue gradient signature   */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --paper: #f5f6f9;
+  --surface: #ffffff;
+  --surface-2: #eef1f6;
+  --sunk: #e9edf4;
+  --ink: #131722;
+  --ink-2: #525a6b;
+  --muted: #868ea1;
+  --line: #e2e6ee;
+  --line-2: #cfd5e2;
+  --accent: #1f6df0;
+  --accent-2: #5b8cf5;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6effe;
+  --good: #1f8a54;
+  --good-soft: #e4f2ea;
+  --warn: #9a6212;
+  --warn-soft: #f7eeda;
+  --crit: #c0391f;
+  --crit-soft: #fae7e2;
+  --grad: linear-gradient(118deg, #d18fe4 0%, #8778ea 45%, #1f63ee 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0e0f16;
+    --surface: #171922;
+    --surface-2: #1e212e;
+    --sunk: #14161f;
+    --ink: #eef0f6;
+    --ink-2: #a2a8ba;
+    --muted: #7b8194;
+    --line: #272b39;
+    --line-2: #373d50;
+    --accent: #5b93ff;
+    --accent-2: #83abff;
+    --accent-ink: #0e1120;
+    --accent-soft: #1d2748;
+    --good: #5fc088;
+    --good-soft: #152a1f;
+    --warn: #d9a352;
+    --warn-soft: #2c2414;
+    --crit: #e5825d;
+    --crit-soft: #331d15;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-crit: var(--crit);
+  --color-crit-soft: var(--crit-soft);
+  --font-display: var(--font-display), "Bricolage Grotesque", system-ui, sans-serif;
+  --font-sans: var(--font-sans), "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.018em;
+  text-wrap: balance;
+  margin: 0;
+}
+a {
+  color: inherit;
+}
