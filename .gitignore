@@ -28,3 +28,6 @@ npm-debug.log*
 
 # lokal Resend-nyckel under uppsättning – raderas av set-resend
 .resend-key.txt
+
+.vercel
+.env*

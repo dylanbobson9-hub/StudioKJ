@@ -1,13 +1,17 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { PageHead, Card, EmptyState } from "@/components/ui";
 import { StagePill, SlaPill, HoldPill, Progress } from "@/components/pills";
 import { listBookings, listCampaigns } from "@/lib/queries";
 import { getCurrentMember } from "@/lib/auth";
 import { markReminded } from "@/lib/actions";
 import { STAGE_META, fmtDur, progressPct, slaFor, slaRank, ago } from "@/lib/stages";
+import { maybeRunSlaJob } from "@/lib/sla-job";
 
 export default async function OverviewPage() {
   const member = await getCurrentMember();
+  // Efter att sidan skickats: kolla tidsplanen och mejla det som brinner.
+  if (member) after(maybeRunSlaJob);
   const [bookings, campaigns] = await Promise.all([listBookings(), listCampaigns()]);
   const firstName = (member?.name ?? "").split(/\s+/)[0] || "där";
 

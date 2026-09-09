@@ -137,3 +137,32 @@ export async function runSlaJob(now = Date.now()) {
 
   return { checked: true, overdue: overdue.length, notified: crew.length };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Opportunistisk körning                                              */
+/* ------------------------------------------------------------------ */
+
+let lastRun = 0;
+const THROTTLE_MS = 10 * 60_000;
+
+/**
+ * Körs när någon i teamet öppnar översikten. Hobby-planen på Vercel tillåter
+ * bara ett schemalagt anrop per dygn, och ett pling som kommer nästa morgon
+ * är värdelöst när deadlinen är 24 timmar. Så det schemalagda jobbet är
+ * golvet, och det här är det som gör att plinget faktiskt kommer i tid under
+ * arbetsdagen.
+ *
+ * Ofarligt att köra ofta: `reminderSentAt` gör jobbet idempotent, så samma
+ * uppdrag mejlas aldrig två gånger. Strypningen ligger i minnet och sparar
+ * bara onödiga databasfrågor.
+ */
+export async function maybeRunSlaJob() {
+  const now = Date.now();
+  if (now - lastRun < THROTTLE_MS) return;
+  lastRun = now;
+  try {
+    await runSlaJob(now);
+  } catch (err) {
+    console.error("[sla] bakgrundskörning misslyckades:", err);
+  }
+}
