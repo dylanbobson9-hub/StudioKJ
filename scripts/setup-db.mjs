@@ -72,9 +72,18 @@ const main = async () => {
   console.log(`\nKJ Studio – databasuppkoppling`);
   console.log(`Projekt: ${REF} (${REGION})\n`);
 
-  const pw = await askHidden("Klistra in databaslösenordet från Supabase (syns inte): ");
+  // Lösenordet kan komma via miljövariabel (fungerar i alla terminaler) eller,
+  // om terminalen klarar det, via en dold fråga.
+  let pw = process.env.SUPABASE_DB_PASSWORD || "";
+  if (!pw && process.stdin.isTTY) {
+    pw = await askHidden("Klistra in databaslösenordet från Supabase (syns inte): ");
+  }
   if (!pw.trim()) {
-    console.error("Inget lösenord angavs. Avbryter.");
+    console.error(
+      `\nInget lösenord angivet.\n\n` +
+        `Kör så här istället (byt ut LOSENORDET):\n\n` +
+        `  $env:SUPABASE_DB_PASSWORD='LOSENORDET'; node scripts/setup-db.mjs\n`,
+    );
     process.exit(1);
   }
 
@@ -123,7 +132,10 @@ SEED_ADMIN_NAME="${keep("SEED_ADMIN_NAME", "Kevin Jansson")}"
 
   fs.writeFileSync(ENV_PATH, body);
   console.log(`\n✓ Skrev .env.local (${picked.host})`);
-  console.log(`\nNästa steg:\n  npm run db:push    # skapar tabellerna\n  npm run db:seed    # lägger in dig som admin\n  npm run dev        # starta appen\n`);
+  if (process.env.SUPABASE_DB_PASSWORD) {
+    console.log(`\nRensa lösenordet ur terminalsessionen med:\n  $env:SUPABASE_DB_PASSWORD=$null`);
+  }
+  console.log(`\nKlart. Säg till så körs tabeller + admin upp.\n`);
 };
 
 main().catch((e) => {
