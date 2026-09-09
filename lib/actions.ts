@@ -9,6 +9,7 @@ import { stageLabel, type Stage } from "@/lib/stages";
 import { STAGES } from "@/lib/db/schema";
 import { newToken, clientLink, creatorLink } from "@/lib/tokens";
 import { sendEmail, emailShell } from "@/lib/email";
+import { notify, STAGE_EVENT } from "@/lib/notify";
 
 async function requireStaff() {
   const m = await getCurrentMember();
@@ -150,6 +151,10 @@ export async function setStage(fd: FormData) {
     .set({ stage, stageSince: new Date(), reminderSentAt: null, updatedAt: new Date() })
     .where(eq(schema.booking.id, id));
   await logEvent(id, actorTag(m), `flyttade till "${stageLabel(stage)}"`);
+
+  // Vissa steg är hela poängen med länkarna – då ska mottagaren få ett mejl.
+  const event = STAGE_EVENT[stage];
+  if (event) await notify(id, event);
 
   revalidatePath(`/bookings/${id}`);
   revalidatePath(`/campaigns/${cur.campaignId}`);

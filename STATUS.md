@@ -54,21 +54,46 @@ Tabellerna är skapade (`db:push`) och en admin + exempelkund är inlagd.
 Inloggningen fungerar; utan RESEND_API_KEY skrivs magic link-länken ut i
 serverkonsolen istället för att mejlas.
 
+## Mejlen går på riktigt (2026-09-09)
+
+Resend är inkopplat med `send.kjmarketingnorway.com` som verifierad
+avsändardomän (`kjmarketingsweden.com` rörs inte – där ligger Google
+Workspace). Nyckeln sattes via `scripts/set-resend.mjs`, som läser den ur en
+gitignorerad fil och raderar filen efteråt.
+
+**Aviseringar** (`lib/notify.ts`) skickas nu automatiskt:
+
+| Händelse | Mottagare |
+| --- | --- |
+| Kreatör föreslagen | kund – "väntar på ert ja" |
+| Brief redo | kund |
+| Material inlämnat | kund + crew |
+| Kunden godkände kreatören | crew – 24h-klockan startar |
+| Kunden tackade nej | crew |
+| Brief godkänd | kreatör – "dags att spela in" |
+| Material godkänt | kreatör |
+| Ändring begärd | kreatör + crew, med kundens kommentar |
+
+Två regler genomgående: ett mejl kan aldrig fälla en server action, och vi
+mejlar bara adresser som redan har en aktiv länk. Varje utskick loggas i
+uppdragets tidslinje.
+
+**Tidsplanen plingar utanför appen** – `/api/cron/sla` (`lib/sla-job.ts`) letar
+upp allt som spräckt sin deadline och mejlar crew ett samlat brev. Max två
+pling per steg: ett när första deadlinen passeras, ett när utbytesdeadlinen
+gör det. Vercel Cron kör den 07/12/16 på vardagar (`vercel.json`).
+Endpointen kräver `CRON_SECRET` i produktion.
+
 ## Kvar i Fas 1
 
-1. **Resend** – nyckel + verifierad avsändardomän så länkarna och
-   avisreingarna faktiskt mejlas (loggas i konsolen så länge).
-2. **Aviseringar** – "brief redo", "material redo", "godkänd – spela in",
-   "ändring begärd" till rätt part när ett steg byts.
-3. **Tidsplan med riktiga notiser** – schemalagt jobb (Vercel Cron) som mejlar
-   ansvarig när 24 h/48 h passeras även när ingen har appen öppen.
-4. **Deploy** – Vercel, domän, riktig data, teamet testar.
+1. **Deploy** – Vercel, domän, riktig data, teamet testar.
 
 ## Behövs från KJ
 
-- [ ] `DATABASE_URL` + `DATABASE_URL_DIRECT` (Supabase- eller Neon-projekt) i Vercel + `.env.local`
-- [ ] `RESEND_API_KEY` + verifierad avsändardomän
 - [ ] DNS för `studio.kjmarketingsweden.com` → Vercel
+- [ ] `CRON_SECRET` satt i Vercel (valfritt värde, samma sträng räcker)
+- [x] `DATABASE_URL` + `DATABASE_URL_DIRECT` – Supabase `kj-studio`
+- [x] `RESEND_API_KEY` + verifierad avsändardomän
 - [ ] Team-lista: namn + e-post + roll
 - [ ] Vercel-projekt kopplat till detta repo
 - [ ] Vänsterstapelns SVG (logo-01?) om den finns – annars kör vi med approximationen

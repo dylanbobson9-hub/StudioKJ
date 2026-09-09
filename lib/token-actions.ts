@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { requireDb, schema } from "@/lib/db";
 import { stageLabel, type Stage } from "@/lib/stages";
+import { notify } from "@/lib/notify";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 
@@ -112,12 +113,14 @@ export async function clientDecideCreator(fd: FormData) {
   if (approve) {
     await moveStage(b.id, "price_talk", { creatorApproval: "approved" });
     await logEvent(b.id, "Kund", "godkände kreatören – outreach startar");
+    await notify(b.id, { kind: "creator_approved" });
   } else {
     await requireDb()
       .update(schema.booking)
       .set({ creatorApproval: "rejected", approvalComment: comment || null, updatedAt: new Date() })
       .where(eq(schema.booking.id, b.id));
     await logEvent(b.id, "Kund", `avvisade kreatören${comment ? `: ${comment}` : ""}`);
+    await notify(b.id, { kind: "creator_rejected", comment });
   }
   refresh(token, "k");
   revalidatePath(`/campaigns/${b.campaignId}`);
@@ -133,12 +136,14 @@ export async function clientDecideBrief(fd: FormData) {
   if (approve) {
     await moveStage(b.id, "brief_approved", { briefApproval: "approved", approvalComment: null });
     await logEvent(b.id, "Kund", "godkände briefen");
+    await notify(b.id, { kind: "brief_approved" });
   } else {
     await requireDb()
       .update(schema.booking)
       .set({ briefApproval: "changes", approvalComment: comment || null, updatedAt: new Date() })
       .where(eq(schema.booking.id, b.id));
     await logEvent(b.id, "Kund", `begärde ändring på briefen${comment ? `: ${comment}` : ""}`);
+    await notify(b.id, { kind: "changes_requested", what: "brief", comment });
   }
   refresh(token, "k");
   revalidatePath(`/campaigns/${b.campaignId}`);
@@ -154,12 +159,14 @@ export async function clientDecideContent(fd: FormData) {
   if (approve) {
     await moveStage(b.id, "content_approved", { contentApproval: "approved", approvalComment: null });
     await logEvent(b.id, "Kund", "godkände materialet");
+    await notify(b.id, { kind: "content_approved" });
   } else {
     await requireDb()
       .update(schema.booking)
       .set({ contentApproval: "changes", approvalComment: comment || null, updatedAt: new Date() })
       .where(eq(schema.booking.id, b.id));
     await logEvent(b.id, "Kund", `begärde ändring på materialet${comment ? `: ${comment}` : ""}`);
+    await notify(b.id, { kind: "changes_requested", what: "content", comment });
   }
   refresh(token, "k");
   revalidatePath(`/campaigns/${b.campaignId}`);
@@ -213,6 +220,7 @@ export async function creatorSubmitContent(fd: FormData) {
     approvalComment: null,
   });
   await logEvent(b.id, "Kreatör", `skickade in material (${links.length} länk${links.length === 1 ? "" : "ar"})`);
+  await notify(b.id, { kind: "content_ready" });
   refresh(token, "u");
   revalidatePath(`/campaigns/${b.campaignId}`);
 }
