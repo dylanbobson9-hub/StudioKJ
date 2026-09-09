@@ -84,14 +84,30 @@ pling per steg: ett när första deadlinen passeras, ett när utbytesdeadlinen
 gör det. Vercel Cron kör den 07/12/16 på vardagar (`vercel.json`).
 Endpointen kräver `CRON_SECRET` i produktion.
 
+## Uppe i produktion (2026-09-09)
+
+**https://studio-kj.vercel.app** — Vercel-projektet `studio-kj`, byggt från
+`main`, alla miljövariabler satta av `scripts/deploy.mjs`. Varje push till
+`main` deployar om automatiskt.
+
+Verifierat live: inloggningssidan svarar 200, `/api/cron/sla` svarar 401 utan
+nyckel, en påhittad kundlänk ger 404.
+
+Hobby-planen tillåter bara **ett** cron-anrop per dygn (06:00 UTC), vilket är
+värdelöst mot en 24-timmarsdeadline. Därför kör översikten samma jobb i
+`after()` när någon i teamet öppnar den — plinget kommer inom minuter under
+arbetsdagen, och det schemalagda anropet är bara golvet. Blir det aktuellt
+med Pro-planen kan `vercel.json` gå tillbaka till 07/12/16.
+
 ## Kvar i Fas 1
 
-1. **Deploy** – Vercel, domän, riktig data, teamet testar.
+1. **Domänen** – `studio.kjmarketingsweden.com` (CNAME hos utvecklarna).
+2. **Teamet in** och en riktig kampanj körd hela vägen.
 
 ## Behövs från KJ
 
 - [ ] DNS för `studio.kjmarketingsweden.com` → Vercel
-- [ ] `CRON_SECRET` satt i Vercel (valfritt värde, samma sträng räcker)
+- [x] `CRON_SECRET` – slumpad av deploy-skriptet
 - [x] `DATABASE_URL` + `DATABASE_URL_DIRECT` – Supabase `kj-studio`
 - [x] `RESEND_API_KEY` + verifierad avsändardomän
 - [ ] Team-lista: namn + e-post + roll
