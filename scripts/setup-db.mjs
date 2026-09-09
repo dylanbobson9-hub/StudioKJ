@@ -17,6 +17,7 @@ const REF = process.env.SUPABASE_REF || "leifsetqzaybxdhzwluv";
 const REGION = process.env.SUPABASE_REGION || "eu-north-1";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const ENV_PATH = path.join(ROOT, ".env.local");
+const PW_PATH = path.join(ROOT, ".db-password.txt");
 
 function askHidden(question) {
   return new Promise((resolve) => {
@@ -72,17 +73,26 @@ const main = async () => {
   console.log(`\nKJ Studio – databasuppkoppling`);
   console.log(`Projekt: ${REF} (${REGION})\n`);
 
-  // Lösenordet kan komma via miljövariabel (fungerar i alla terminaler) eller,
-  // om terminalen klarar det, via en dold fråga.
-  let pw = process.env.SUPABASE_DB_PASSWORD || "";
+  // Lösenordet läses helst ur en lokal fil så att det aldrig syns på skärmen
+  // eller hamnar i terminalens historik. Filen raderas när vi är klara.
+  let pw = "";
+  let usedFile = false;
+  if (fs.existsSync(PW_PATH)) {
+    pw = fs.readFileSync(PW_PATH, "utf8").trim();
+    usedFile = true;
+  }
+  if (!pw) pw = (process.env.SUPABASE_DB_PASSWORD || "").trim();
   if (!pw && process.stdin.isTTY) {
     pw = await askHidden("Klistra in databaslösenordet från Supabase (syns inte): ");
   }
   if (!pw.trim()) {
     console.error(
-      `\nInget lösenord angivet.\n\n` +
-        `Kör så här istället (byt ut LOSENORDET):\n\n` +
-        `  $env:SUPABASE_DB_PASSWORD='LOSENORDET'; node scripts/setup-db.mjs\n`,
+      `\nInget lösenord hittades.\n\n` +
+        `Gör så här:\n` +
+        `  1. notepad .db-password.txt\n` +
+        `  2. Klistra in lösenordet, spara (Ctrl+S) och stäng\n` +
+        `  3. node scripts/setup-db.mjs\n\n` +
+        `Filen raderas automatiskt när uppkopplingen lyckats.\n`,
     );
     process.exit(1);
   }
@@ -132,6 +142,16 @@ SEED_ADMIN_NAME="${keep("SEED_ADMIN_NAME", "Kevin Jansson")}"
 
   fs.writeFileSync(ENV_PATH, body);
   console.log(`\n✓ Skrev .env.local (${picked.host})`);
+
+  if (usedFile) {
+    try {
+      fs.writeFileSync(PW_PATH, "x".repeat(64));
+      fs.unlinkSync(PW_PATH);
+      console.log(`✓ Raderade .db-password.txt`);
+    } catch {
+      console.log(`OBS: kunde inte radera .db-password.txt – ta bort den manuellt.`);
+    }
+  }
   if (process.env.SUPABASE_DB_PASSWORD) {
     console.log(`\nRensa lösenordet ur terminalsessionen med:\n  $env:SUPABASE_DB_PASSWORD=$null`);
   }
