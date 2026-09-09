@@ -10,6 +10,7 @@ import { STAGES, TEAM_ROLES, type TeamRole } from "@/lib/db/schema";
 import { newToken, clientLink, creatorLink, APP_URL } from "@/lib/tokens";
 import { sendEmail, emailShell } from "@/lib/email";
 import { notify, STAGE_EVENT } from "@/lib/notify";
+import { listAccessTokens } from "@/lib/queries";
 
 async function requireStaff() {
   const m = await getCurrentMember();
@@ -412,6 +413,97 @@ export async function revokeLink(fd: FormData) {
     .set({ revoked: true })
     .where(eq(schema.accessToken.token, token));
   revalidatePath(str(fd, "back") || "/campaigns");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Ekonomi                                                             */
+/* ------------------------------------------------------------------ */
+
+async function requireEcon() {
+  const m = await getCurrentMember();
+  if (!m || !can.econ(m)) throw new Error("Bara Admin och Ekonomi ser ekonomin.");
+  return m;
+}
+
+/** Tomt fält betyder "inte satt ännu" – inte noll kronor. */
+function amount(fd: FormData, k: string): number | null {
+  const raw = String(fd.get(k) ?? "").replace(/\s|kr/gi, "").replace(",", ".").trim();
+  if (!raw) return null;
+  const v = Math.round(Number(raw));
+  return Number.isFinite(v) ? v : null;
+}
+
+export async function saveCampaignEcon(fd: FormData) {
+  const m = await requireEcon();
+  const campaignId = str(fd, "campaignId");
+  if (!campaignId) return;
+
+  const values = {
+    campaignId,
+    agencyFee: amount(fd, "agencyFee"),
+    editingCost: amount(fd, "editingCost"),
+    note: str(fd, "note") || null,
+    updatedAt: new Date(),
+  };
+  await requireDb()
+    .insert(schema.campaignEcon)
+    .values(values)
+    .onConflictDoUpdate({ target: schema.campaignEcon.campaignId, set: values });
+
+  revalidatePath(`/campaigns/${campaignId}`);
+  revalidatePath("/economy");
+  // Kundens totalsumma innehåller arvodet, så deras vy måste räknas om.
+  for (const t of await listAccessTokens({ campaignId })) revalidatePath(`/k/${t.token}`);
+}
+
+export async function saveBookingEcon(fd: FormData) {
+  const m = await requireEcon();
+  const db = requireDb();
+  const bookingId = str(fd, "bookingId");
+  if (!bookingId) return;
+
+  const values = {
+    bookingId,
+    clientPrice: amount(fd, "clientPrice"),
+    creatorFee: amount(fd, "creatorFee"),
+    extraCost: amount(fd, "extraCost"),
+    note: str(fd, "note") || null,
+    updatedAt: new Date(),
+  };
+  await db
+    .insert(schema.bookingEcon)
+    .values(values)
+    .onConflictDoUpdate({ target: schema.bookingEcon.bookingId, set: values });
+  await logEvent(bookingId, actorTag(m), "uppdaterade ekonomin");
+
+  const [b] = await db.select().from(schema.booking).where(eq(schema.booking.id, bookingId)).limit(1);
+  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath("/economy");
+  if (b) {
+    revalidatePath(`/campaigns/${b.campaignId}`);
+    for (const t of await listAccessTokens({ campaignId: b.campaignId })) revalidatePath(`/k/${t.token}`);
+  }
+}
+
+/** Bockar av att uppdraget fakturerats respektive betalats. */
+export async function toggleEconFlag(fd: FormData) {
+  await requireEcon();
+  const db = requireDb();
+  const bookingId = str(fd, "bookingId");
+  const flag = str(fd, "flag");
+  if (!bookingId || (flag !== "invoiced" && flag !== "paid")) return;
+
+  const [cur] = await db.select().from(schema.bookingEcon).where(eq(schema.bookingEcon.bookingId, bookingId)).limit(1);
+  const col = flag === "invoiced" ? "invoicedAt" : "paidAt";
+  const next = cur?.[col] ? null : new Date();
+
+  await db
+    .insert(schema.bookingEcon)
+    .values({ bookingId, [col]: next, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: schema.bookingEcon.bookingId, set: { [col]: next, updatedAt: new Date() } });
+
+  revalidatePath("/economy");
+  revalidatePath(`/bookings/${bookingId}`);
 }
 
 /* ------------------------------------------------------------------ */

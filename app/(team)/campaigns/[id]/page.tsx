@@ -4,6 +4,7 @@ import { PageHead, Card } from "@/components/ui";
 import { StagePill, SlaPill, HoldPill, Progress } from "@/components/pills";
 import { ConfirmSubmit, TrashIcon } from "@/components/ConfirmSubmit";
 import { CopyLink } from "@/components/LinkPanel";
+import { EconPanel } from "@/components/EconPanel";
 import { getCampaign, listBookings, listAccessTokens } from "@/lib/queries";
 import { getCurrentMember, can } from "@/lib/auth";
 import { createBooking, deleteCampaign, issueClientLink, revokeLink } from "@/lib/actions";
@@ -233,6 +234,8 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
           </Card>
         </details>
       </div>
+
+      {can.econ(me) && <EconPanel campaignId={camp.id} />}
     </>
   );
 }

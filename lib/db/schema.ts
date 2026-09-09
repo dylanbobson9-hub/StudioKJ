@@ -265,6 +265,41 @@ export const bookingEvent = pgTable(
 );
 
 /* ------------------------------------------------------------------ */
+/*  Ekonomi                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Alla belopp är hela kronor **exklusive moms**.
+ *
+ * Kundens faktura = summan av uppdragens `clientPrice` + kampanjens
+ * `agencyFee`. Arvodet är alltså en del av totalen per konstruktion – det
+ * räknas fram på ett enda ställe (`campaignPL`) som både vår vy och kundens
+ * portal använder. Den gamla prototypen höll två kopior och de glappade.
+ */
+export const campaignEcon = pgTable("campaign_econ", {
+  campaignId: uuid("campaign_id")
+    .primaryKey()
+    .references(() => campaign.id, { onDelete: "cascade" }),
+  agencyFee: integer("agency_fee"), // vårt arvode för kampanjen
+  editingCost: integer("editing_cost"), // vad redigeringen kostar oss
+  note: text("note"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const bookingEcon = pgTable("booking_econ", {
+  bookingId: uuid("booking_id")
+    .primaryKey()
+    .references(() => booking.id, { onDelete: "cascade" }),
+  clientPrice: integer("client_price"), // vad kunden betalar för uppdraget
+  creatorFee: integer("creator_fee"), // vad kreatören får
+  extraCost: integer("extra_cost"), // produkt, frakt, resa
+  note: text("note"),
+  invoicedAt: timestamp("invoiced_at", { withTimezone: true }),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/* ------------------------------------------------------------------ */
 /*  Uttag av kreatörsdata                                               */
 /* ------------------------------------------------------------------ */
 
@@ -321,3 +356,5 @@ export type Booking = typeof booking.$inferSelect;
 export type BookingEvent = typeof bookingEvent.$inferSelect;
 export type AccessToken = typeof accessToken.$inferSelect;
 export type ExportLog = typeof exportLog.$inferSelect;
+export type CampaignEcon = typeof campaignEcon.$inferSelect;
+export type BookingEcon = typeof bookingEcon.$inferSelect;

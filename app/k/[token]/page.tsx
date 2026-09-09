@@ -5,6 +5,7 @@ import { StagePill, Progress } from "@/components/pills";
 import { Disclaimer, ExternalShell, Panel, Decision } from "@/components/external";
 import { resolveClientToken, touchToken, clientDecideCreator, clientDecideBrief, clientDecideContent, clientSetTracking } from "@/lib/token-actions";
 import { progressPct, fmtDate } from "@/lib/stages";
+import { campaignPL, kr } from "@/lib/econ";
 
 export const metadata = { title: "Kampanj", robots: { index: false, follow: false } };
 
@@ -27,6 +28,9 @@ export default async function ClientView({ params }: PageProps<"/k/[token]">) {
     .filter((b) => b.stage !== "sourcing" && !b.holdActive)
     .sort((a, b) => a.creator.name.localeCompare(b.creator.name, "sv"));
 
+  // Samma uträkning som vår ekonomivy – arvodet ingår per konstruktion.
+  const pl = await campaignPL(camp.id);
+
   const waiting = bookings.filter(
     (b) => b.stage === "creators_review" || b.stage === "brief_review" || b.stage === "content_review",
   );
@@ -38,6 +42,36 @@ export default async function ClientView({ params }: PageProps<"/k/[token]">) {
         .filter(Boolean)
         .join(" · ")}
     >
+      {pl.invoiced > 0 && (
+        <Panel>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-[13px]" style={{ color: "var(--ink-2)" }}>
+              Er kostnad för kampanjen
+            </span>
+            <span className="text-[19px] font-semibold">{kr(pl.invoiced)}</span>
+          </div>
+          <div className="mt-2 border-t pt-2 text-[12.5px]" style={{ borderColor: "var(--line)" }}>
+            {pl.lines
+              .filter((l) => l.clientPrice > 0)
+              .map((l) => (
+                <div key={l.bookingId} className="flex justify-between py-0.5">
+                  <span style={{ color: "var(--ink-2)" }}>{l.creatorName}</span>
+                  <span>{kr(l.clientPrice)}</span>
+                </div>
+              ))}
+            {pl.agencyFee > 0 && (
+              <div className="flex justify-between py-0.5">
+                <span style={{ color: "var(--ink-2)" }}>Produktionsledning KJ</span>
+                <span>{kr(pl.agencyFee)}</span>
+              </div>
+            )}
+          </div>
+          <p className="mt-2 text-[11.5px]" style={{ color: "var(--muted)" }}>
+            Exklusive moms. Preliminärt tills kampanjen är slutförd.
+          </p>
+        </Panel>
+      )}
+
       {waiting.length > 0 && (
         <p
           className="mb-5 rounded-lg border px-4 py-3 text-[13px]"
