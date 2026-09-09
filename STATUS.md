@@ -149,3 +149,22 @@ och `/data/` är gitignorerad. Committa aldrig katalogen.
 
 - Fas 2: ekonomi (`campaign_econ`, `booking_econ`, `price_proposal`) + rollspärr.
 - Fas 3: kreatörskatalogen (~1 400) med sök/filter/guld/AI + redigerar-batchar.
+
+## Fas 2: ekonomin (2026-09-09)
+
+`lib/econ.ts` är **enda** stället där en kampanjs siffror räknas fram. Både
+ekonomivyn och kundens portal läser samma funktion — det var två uträkningar
+som glappade i prototypen och gjorde att byråarvodet försvann ur kundens
+total.
+
+- Kundens faktura = uppdragens kundpris **+ byråarvodet**
+- Vår kostnad = kreatörsarvoden + utlägg + redigering
+- Utbytt kreatör faller ur båda sidor
+- Allt i hela kronor **exklusive moms**; tomt fält = "inte prissatt", inte noll
+
+Ekonomin syns bara för Admin och Ekonomi, både i menyn, på kampanjsidan och i
+server actions. Kunden ser bara sitt fakturerade belopp, aldrig kreatörs-
+arvoden, utlägg eller marginal.
+
+Verifierat mot databasen: 5000 + 5000 + 2250 = 12 250 kr fakturerat,
+7 400 kostnad, 4 850 vinst, 40 % marginal. Byte av kreatör → 7 250 kr.
