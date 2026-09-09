@@ -86,9 +86,14 @@ Endpointen kräver `CRON_SECRET` i produktion.
 
 ## Uppe i produktion (2026-09-09)
 
-**https://studio-kj.vercel.app** — Vercel-projektet `studio-kj`, byggt från
-`main`, alla miljövariabler satta av `scripts/deploy.mjs`. Varje push till
-`main` deployar om automatiskt.
+**https://studio-kj.vercel.app** — Vercel-projektet `studio-kj`, alla
+miljövariabler satta av `scripts/deploy.mjs`.
+
+Projektet är **inte** kopplat till GitHub. En push deployar alltså ingenting;
+det som ligger uppe är det som senast lagts upp med `node scripts/deploy.mjs`.
+Repot är källkodshistorik, inte deploy-trigger. Vill man ha automatisk deploy
+på varje push kopplar man ihop dem med `vercel git connect` — det fungerar
+lika bra med ett privat repo.
 
 Verifierat live: inloggningssidan svarar 200, `/api/cron/sla` svarar 401 utan
 nyckel, en påhittad kundlänk ger 404.
