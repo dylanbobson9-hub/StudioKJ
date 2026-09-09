@@ -99,10 +99,36 @@ värdelöst mot en 24-timmarsdeadline. Därför kör översikten samma jobb i
 arbetsdagen, och det schemalagda anropet är bara golvet. Blir det aktuellt
 med Pro-planen kan `vercel.json` gå tillbaka till 07/12/16.
 
+## Kreatörskatalogen lever (2026-09-09)
+
+Alla **1 387 kreatörer** ligger i databasen, 22 guldmarkerade. Fälten som
+katalogen faktiskt bär finns nu på `creator`: stad, nisch, språk, erfarenhet,
+sociala länkar, adress och ett härlett `price_eur`.
+
+- **/creators** – fritextsök över namn, nisch, stad, land, språk och vad de
+  kan filma. Filter på land, plattform, kön, guld, har mejl och takpris.
+  Sortering på guld/namn/pris, 60 per sida.
+- **/creators/[id]** – hela profilen, uppdragshistorik och koppla-till-kampanj.
+- **/creators/export** – CSV med samma filter som listan, 19 kolumner valda
+  för att en AI ska kunna matcha. Bakom inloggning, `noindex`, `no-store`.
+- **"+ Koppla kreatör"** på en kampanj öppnar katalogen i kopplingsläge.
+  Knappen "Ny kreatör" finns kvar för någon som inte står i katalogen.
+
+`price_eur` härleds ur kreatörernas egen pristext av importen och är därför
+ungefärlig — originaltexten visas alltid bredvid.
+
+### Personuppgifter
+
+Katalogen innehåller 945 mejladresser, telefonnummer och hemadresser till
+riktiga personer, och **repot är publikt**. Datan finns därför bara i
+databasen: `scripts/import-catalog.mjs` läser en lokal fil rakt in i Postgres
+och `/data/` är gitignorerad. Committa aldrig katalogen.
+
 ## Kvar i Fas 1
 
 1. **Domänen** – `studio.kjmarketingsweden.com` (CNAME hos utvecklarna).
 2. **Teamet in** och en riktig kampanj körd hela vägen.
+3. **Överväg att göra repot privat** – se ovan.
 
 ## Behövs från KJ
 
