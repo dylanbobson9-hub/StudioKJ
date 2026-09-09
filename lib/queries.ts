@@ -187,6 +187,11 @@ export async function getCreator(id: string) {
   return row ?? null;
 }
 
+/** Vem som dragit ut kreatörslistan, senast först. */
+export async function listExports(limit = 25) {
+  return requireDb().select().from(schema.exportLog).orderBy(desc(schema.exportLog.at)).limit(limit);
+}
+
 export async function listTeam() {
   return requireDb().select().from(schema.teamMember).orderBy(schema.teamMember.name);
 }

@@ -220,11 +220,26 @@ export default async function CreatorsPage({ searchParams }: PageProps<"/creator
               Rensa filter
             </Link>
           )}
-          <a href={exportHref(sp)} className="ml-auto font-medium" style={{ color: "var(--accent)" }}>
+          <a
+            href={exportHref(sp)}
+            className="ml-auto font-medium"
+            style={{ color: "var(--accent)" }}
+            title="Uttaget loggas med ditt namn"
+          >
             Exportera {total.toLocaleString("sv-SE")} som CSV ↓
           </a>
         </div>
       </form>
+
+      {!campaign && (
+        <p
+          className="mb-4 rounded-lg border px-3.5 py-2.5 text-[12px]"
+          style={{ borderColor: "var(--line)", background: "var(--surface-2)", color: "var(--ink-2)" }}
+        >
+          <b style={{ color: "var(--ink)" }}>Internt.</b> Katalogen är en affärshemlighet och syns bara för KJ Crew,
+          Ekonomi och Admin – aldrig för kunder eller redigerare. Varje CSV-uttag loggas med namn och tidpunkt.
+        </p>
+      )}
 
       {rows.length === 0 ? (
         <EmptyState title="Ingen matchar" hint="Prova ett bredare sökord eller rensa filtren." />

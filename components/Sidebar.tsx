@@ -13,7 +13,8 @@ const ITEMS: Item[] = [
   { href: "/campaigns", label: "Kunder & kampanjer" },
   { href: "/economy", label: "Ekonomi", roles: ["admin", "ekonomi"] },
   { href: "/editing", label: "Redigering" },
-  { href: "/creators", label: "Kreatörer" },
+  // Katalogen är affärshemlighet – redigerare ser bara sina egna jobb.
+  { href: "/creators", label: "Kreatörer", roles: ["admin", "ekonomi", "crew"] },
   { href: "/team", label: "Personer", roles: ["admin"] },
 ];
 

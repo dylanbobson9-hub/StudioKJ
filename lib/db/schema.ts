@@ -265,6 +265,29 @@ export const bookingEvent = pgTable(
 );
 
 /* ------------------------------------------------------------------ */
+/*  Uttag av kreatörsdata                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Varje gång någon drar ut katalogen som fil. Listan är affärshemlighet –
+ * en exporterad CSV kan mejlas vidare hur som helst, och då är det här enda
+ * spåret av vem som tog den, när och vilken delmängd.
+ */
+export const exportLog = pgTable(
+  "export_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    memberId: uuid("member_id").references(() => teamMember.id, { onDelete: "set null" }),
+    memberEmail: text("member_email").notNull(), // sparas separat: överlever att kontot tas bort
+    at: timestamp("at", { withTimezone: true }).defaultNow().notNull(),
+    kind: text("kind").notNull().default("creators_csv"),
+    rows: integer("rows").notNull(),
+    filter: text("filter"), // query-strängen, i klartext
+  },
+  (t) => [index("export_log_at_idx").on(t.at)],
+);
+
+/* ------------------------------------------------------------------ */
 /*  Access tokens — magic links for external client / creator          */
 /* ------------------------------------------------------------------ */
 
@@ -297,3 +320,4 @@ export type Creator = typeof creator.$inferSelect;
 export type Booking = typeof booking.$inferSelect;
 export type BookingEvent = typeof bookingEvent.$inferSelect;
 export type AccessToken = typeof accessToken.$inferSelect;
+export type ExportLog = typeof exportLog.$inferSelect;

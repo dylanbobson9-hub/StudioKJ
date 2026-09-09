@@ -1,4 +1,5 @@
 import { getCurrentMember, can } from "@/lib/auth";
+import { requireDb, schema } from "@/lib/db";
 import { searchCreators, type CreatorFilter } from "@/lib/queries";
 
 /**
@@ -58,6 +59,19 @@ export async function GET(req: Request) {
   };
 
   const { rows } = await searchCreators(filter);
+
+  // Spåret av vem som tog ut listan. Får inte fälla exporten, men ska finnas.
+  try {
+    await requireDb().insert(schema.exportLog).values({
+      memberId: me!.id,
+      memberEmail: me!.email,
+      rows: rows.length,
+      filter: sp.toString() || null,
+    });
+  } catch (err) {
+    console.error("[export] kunde inte logga uttaget:", err);
+  }
+
   const body =
     "﻿" + // BOM så Excel läser å ä ö rätt
     [COLUMNS.map(([h]) => cell(h)).join(","), ...rows.map((r) => COLUMNS.map(([, get]) => cell(get(r))).join(","))].join(

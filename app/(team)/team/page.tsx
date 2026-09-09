@@ -4,7 +4,7 @@ import { Pill } from "@/components/pills";
 import { ConfirmSubmit, TrashIcon } from "@/components/ConfirmSubmit";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { getCurrentMember, can } from "@/lib/auth";
-import { listTeam } from "@/lib/queries";
+import { listTeam, listExports } from "@/lib/queries";
 import { addTeamMember, setTeamRole, removeTeamMember } from "@/lib/actions";
 import { TEAM_ROLES } from "@/lib/db/schema";
 
@@ -23,7 +23,7 @@ const field = {
 export default async function TeamPage() {
   const me = await getCurrentMember();
   if (!can.managePeople(me)) redirect("/");
-  const team = await listTeam();
+  const [team, exports] = await Promise.all([listTeam(), listExports()]);
 
   return (
     <>
@@ -155,6 +155,39 @@ export default async function TeamPage() {
             Bjud in
           </button>
         </form>
+      </Card>
+
+      <Card className="mt-5">
+        <h2 className="mb-1 text-[13.5px] font-semibold">Uttag av kreatörslistan</h2>
+        <p className="mb-3 text-[12.5px]" style={{ color: "var(--ink-2)" }}>
+          Katalogen är en affärshemlighet. En exporterad fil går inte att ta tillbaka, så här står vem som hämtat den.
+        </p>
+        {exports.length === 0 ? (
+          <p className="text-[12.5px]" style={{ color: "var(--muted)" }}>
+            Ingen har exporterat något ännu.
+          </p>
+        ) : (
+          <div className="text-[12.5px]">
+            {exports.map((e) => (
+              <div
+                key={e.id}
+                className="flex flex-wrap items-baseline gap-x-3 border-b py-2 last:border-b-0"
+                style={{ borderColor: "var(--line)" }}
+              >
+                <span className="font-medium">{e.memberEmail}</span>
+                <span style={{ color: "var(--muted)" }}>
+                  {new Intl.DateTimeFormat("sv-SE", { dateStyle: "short", timeStyle: "short" }).format(e.at)}
+                </span>
+                <span style={{ color: "var(--ink-2)" }}>{e.rows.toLocaleString("sv-SE")} kreatörer</span>
+                {e.filter && (
+                  <span className="truncate" style={{ color: "var(--muted)", fontFamily: "var(--font-mono)" }}>
+                    {e.filter}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </>
   );
