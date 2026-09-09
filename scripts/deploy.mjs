@@ -67,7 +67,23 @@ for (const line of fs.readFileSync(ENV_PATH, "utf8").split(/\r?\n/)) {
 
 // Produktionsvärden.
 env.set("APP_URL", PROD_URL);
-if (!env.get("CRON_SECRET")) env.set("CRON_SECRET", randomBytes(32).toString("base64url"));
+/**
+ * Slumpas en gång och skrivs sedan tillbaka till .env.local, så nästa deploy
+ * återanvänder samma värde. INTAKE_SECRET ligger inklistrad i Google-
+ * formulärens skript – en ny nyckel vid varje deploy hade tystat dem.
+ */
+const generated = [];
+for (const key of ["CRON_SECRET", "INTAKE_SECRET"]) {
+  if (!env.get(key)) {
+    env.set(key, randomBytes(32).toString("base64url"));
+    generated.push(key);
+  }
+}
+if (generated.length) {
+  const extra = generated.map((k) => `${k}="${env.get(k)}"`).join("\n");
+  fs.writeFileSync(ENV_PATH, `${fs.readFileSync(ENV_PATH, "utf8").replace(/\s*$/, "")}\n\n${extra}\n`);
+  console.log(`Slumpade och sparade i .env.local: ${generated.join(", ")}`);
+}
 
 for (const required of ["DATABASE_URL", "AUTH_SECRET", "RESEND_API_KEY", "RESEND_FROM"]) {
   if (!env.get(required)) {

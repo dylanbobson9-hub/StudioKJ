@@ -170,6 +170,16 @@ export const creator = pgTable("creator", {
   bankAccount: text("bank_account"),
   fSkatt: text("f_skatt"),
   verified: boolean("verified").notNull().default(false),
+  /** Var profilen kom ifrån: "form" (Google-formuläret), "catalog", "manual". */
+  source: text("source").notNull().default("manual"),
+  /** Sattes när någon i teamet tittat på en ny ansökan. Null = ogranskad. */
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  /**
+   * Hela formulärsvaret precis som det kom in. Frågorna i formuläret ändras
+   * över tid och mappningen är gissningsvis – därför sparas råsvaret, så inget
+   * någon skrivit går förlorat bara för att vi inte kände igen en rubrik.
+   */
+  rawIntake: jsonb("raw_intake").$type<Record<string, string>>(),
   // internal only
   preferred: boolean("preferred").notNull().default(false), // guld
   fromCatalog: boolean("from_catalog").notNull().default(false),

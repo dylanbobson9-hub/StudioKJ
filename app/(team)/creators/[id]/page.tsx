@@ -4,7 +4,7 @@ import { PageHead, Card } from "@/components/ui";
 import { Pill } from "@/components/pills";
 import { getCurrentMember, can } from "@/lib/auth";
 import { getCreator, listCampaigns, listBookings } from "@/lib/queries";
-import { attachCreator } from "@/lib/actions";
+import { attachCreator, markCreatorReviewed } from "@/lib/actions";
 import { stageLabel } from "@/lib/stages";
 
 const field = { borderColor: "var(--line-2)", background: "var(--surface-2)" } as const;
@@ -46,6 +46,25 @@ export default async function CreatorPage({ params }: PageProps<"/creators/[id]"
         sub={[c.niche, [c.city, c.country].filter(Boolean).join(", "), c.platform].filter(Boolean).join(" · ")}
       />
 
+      {c.source === "form" && !c.reviewedAt && (
+        <form
+          action={markCreatorReviewed}
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border px-3.5 py-2.5"
+          style={{ borderColor: "var(--accent)", background: "var(--accent-soft)" }}
+        >
+          <input type="hidden" name="creatorId" value={c.id} />
+          <span className="text-[13px] font-medium" style={{ color: "var(--accent)" }}>
+            Ny ansökan från formuläret – ingen har granskat den än.
+          </span>
+          <button
+            className="ml-auto rounded-lg px-3.5 py-1.5 text-[12.5px] font-semibold text-white"
+            style={{ background: "var(--accent)" }}
+          >
+            Markera som granskad
+          </button>
+        </form>
+      )}
+
       <div className="grid gap-4 md:grid-cols-[1fr_300px]">
         <div>
           <Card>
@@ -72,6 +91,24 @@ export default async function CreatorPage({ params }: PageProps<"/creators/[id]"
             </Row>
             <Row label="Storlek">{c.shirtSize}</Row>
           </Card>
+
+          {c.rawIntake && Object.keys(c.rawIntake).length > 0 && (
+            <Card className="mt-4">
+              <details>
+                <summary className="cursor-pointer list-none text-[13.5px] font-semibold">
+                  Hela ansökan, ord för ord ▾
+                </summary>
+                <p className="mt-1 mb-2 text-[11.5px]" style={{ color: "var(--muted)" }}>
+                  Precis som personen fyllde i formuläret. Ligger kvar även för frågor vi inte sorterar in ovan.
+                </p>
+                {Object.entries(c.rawIntake).map(([q, a]) => (
+                  <Row key={q} label={q}>
+                    {a}
+                  </Row>
+                ))}
+              </details>
+            </Card>
+          )}
 
           {mine.length > 0 && (
             <Card className="mt-4">

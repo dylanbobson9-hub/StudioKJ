@@ -32,6 +32,7 @@ function parse(sp: Record<string, string | string[] | undefined>): CreatorFilter
     gender: s("kon"),
     gold: s("guld") === "1",
     withEmail: s("mejl") === "1",
+    newOnly: s("nya") === "1",
     maxPrice: Number(s("maxpris")) || undefined,
     sort: (s("sort") as CreatorFilter["sort"]) ?? "gold",
     page,
@@ -78,7 +79,7 @@ export default async function CreatorsPage({ searchParams }: PageProps<"/creator
   const campaignId = (Array.isArray(sp.kampanj) ? sp.kampanj[0] : sp.kampanj)?.trim();
   const campaign = campaignId ? await getCampaign(campaignId) : null;
 
-  const [{ rows, total }, { countries }] = await Promise.all([searchCreators(f), creatorFacets()]);
+  const [{ rows, total }, { countries, pending }] = await Promise.all([searchCreators(f), creatorFacets()]);
 
   const pages = Math.ceil(total / PER_PAGE);
   const active = [f.q, f.country, f.platform, f.gender, f.gold ? "guld" : null, f.withEmail ? "mejl" : null].filter(
@@ -215,6 +216,10 @@ export default async function CreatorsPage({ searchParams }: PageProps<"/creator
             <input type="checkbox" name="mejl" value="1" defaultChecked={f.withEmail} />
             Har mejladress
           </label>
+          <label className="flex items-center gap-1.5" style={{ color: "var(--ink-2)" }}>
+            <input type="checkbox" name="nya" value="1" defaultChecked={f.newOnly} />
+            Bara nya ansökningar
+          </label>
           {active > 0 && (
             <Link href="/creators" style={{ color: "var(--accent)" }}>
               Rensa filter
@@ -230,6 +235,17 @@ export default async function CreatorsPage({ searchParams }: PageProps<"/creator
           </a>
         </div>
       </form>
+
+      {!campaign && pending > 0 && !f.newOnly && (
+        <Link
+          href={"/creators?nya=1" as Route}
+          className="mb-4 flex items-center gap-2 rounded-lg border px-3.5 py-2.5 text-[13px] font-medium"
+          style={{ borderColor: "var(--accent)", background: "var(--accent-soft)", color: "var(--accent)" }}
+        >
+          {pending} ny{pending === 1 ? "" : "a"} ansökning{pending === 1 ? "" : "ar"} från formuläret väntar på granskning
+          <span className="ml-auto">→</span>
+        </Link>
+      )}
 
       {!campaign && (
         <p

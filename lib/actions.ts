@@ -415,6 +415,19 @@ export async function revokeLink(fd: FormData) {
   revalidatePath(str(fd, "back") || "/campaigns");
 }
 
+/** Kvitterar en ny ansökan så den försvinner ur "att granska". */
+export async function markCreatorReviewed(fd: FormData) {
+  await requireStaff();
+  const id = str(fd, "creatorId");
+  if (!id) return;
+  await requireDb()
+    .update(schema.creator)
+    .set({ reviewedAt: new Date() })
+    .where(eq(schema.creator.id, id));
+  revalidatePath(`/creators/${id}`);
+  revalidatePath("/creators");
+}
+
 /* ------------------------------------------------------------------ */
 /*  Ekonomi                                                             */
 /* ------------------------------------------------------------------ */

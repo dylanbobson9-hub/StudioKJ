@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, desc, eq, ilike, isNotNull, lte, ne, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNotNull, isNull, lte, ne, or } from "drizzle-orm";
 import { requireDb, schema } from "@/lib/db";
 
 /** Ett uppdrag med kampanj, kund och kreatör påhängda. */
@@ -114,6 +114,8 @@ export type CreatorFilter = {
   gender?: string;
   gold?: boolean;
   withEmail?: boolean;
+  /** Nya ansökningar från formuläret som ingen tittat på än. */
+  newOnly?: boolean;
   maxPrice?: number;
   sort?: "name" | "price" | "gold";
   limit?: number;
@@ -143,6 +145,7 @@ function creatorWhere(f: CreatorFilter) {
   if (f.gender) w.push(eq(schema.creator.gender, f.gender));
   if (f.gold) w.push(eq(schema.creator.preferred, true));
   if (f.withEmail) w.push(isNotNull(schema.creator.email));
+  if (f.newOnly) w.push(and(eq(schema.creator.source, "form"), isNull(schema.creator.reviewedAt)));
   if (f.maxPrice) w.push(lte(schema.creator.priceEur, f.maxPrice));
   return w.length ? and(...w) : undefined;
 }
@@ -179,7 +182,11 @@ export async function creatorFacets() {
     .where(isNotNull(schema.creator.country))
     .groupBy(schema.creator.country)
     .orderBy(desc(count()));
-  return { countries: countries.filter((c) => c.value) };
+  const [{ pending }] = await db
+    .select({ pending: count() })
+    .from(schema.creator)
+    .where(and(eq(schema.creator.source, "form"), isNull(schema.creator.reviewedAt)));
+  return { countries: countries.filter((c) => c.value), pending };
 }
 
 export async function getCreator(id: string) {
