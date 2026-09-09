@@ -19,6 +19,14 @@ Uppdaterad 2026-09-08. Fas 1 av 3 (se planen).
   `/k/<token>` och `/u/<token>` läser access_token och visar kampanj/uppdrag.
 - Utvecklingsläge: appen kör utan databas (browsbar UI).
 
+## Databasen är uppe (2026-09-09)
+
+Supabase-projekt `kj-studio` i **North EU (Stockholm)**, Data API avstängt —
+appen pratar direkt med Postgres via poolern (`aws-0-eu-north-1`).
+Tabellerna är skapade (`db:push`) och en admin + exempelkund är inlagd.
+Inloggningen fungerar; utan RESEND_API_KEY skrivs magic link-länken ut i
+serverkonsolen istället för att mejlas.
+
 ## Kvar i Fas 1
 
 1. **Team-vyerna med data** – översikt (KPI + attention-lista), pipeline-board,

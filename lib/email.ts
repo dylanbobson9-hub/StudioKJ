@@ -12,7 +12,16 @@ type SendArgs = { to: string; subject: string; html: string };
  */
 export async function sendEmail({ to, subject, html }: SendArgs) {
   if (!resend) {
-    console.log(`\n[email → ${to}] ${subject}\n${html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}\n`);
+    // No Resend key (local dev): print the message, and any links on their own
+    // line so a magic link is actually clickable from the terminal.
+    const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    console.log(
+      `\n──────── e-post (ej skickad – ingen RESEND_API_KEY) ────────\n` +
+        `Till:   ${to}\nÄmne:   ${subject}\n${text}\n` +
+        links.map((l) => `\n➜ ${l}`).join("") +
+        `\n────────────────────────────────────────────────────────────\n`,
+    );
     return { delivered: false as const };
   }
   const { error } = await resend.emails.send({ from, to, subject, html });
