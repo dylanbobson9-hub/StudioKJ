@@ -143,14 +143,26 @@ export const creator = pgTable("creator", {
   email: text("email"),
   phone: text("phone"),
   country: text("country"),
+  city: text("city"),
   portfolioUrl: text("portfolio_url"),
+  socialUrl: text("social_url"), // TikTok/IG som de själva angav
   gender: text("gender"),
   age: text("age"),
-  priceNote: text("price_note"), // riktpris / video (internal)
+  niche: text("niche"), // "Beauty, Fashion, Sport"
+  languages: text("languages"),
+  experience: text("experience"),
+  priceNote: text("price_note"), // riktpris / video, deras egna ord (internal)
+  /**
+   * Riktpriset omräknat till euro så listan går att sortera och filtrera.
+   * Härlett ur `priceNote` av importen och därför ungefärligt — visa alltid
+   * originaltexten bredvid, aldrig den här siffran ensam.
+   */
+  priceEur: integer("price_eur"),
   canFilm: text("can_film"),
   noGo: text("no_go"),
   pitch: text("pitch"),
   deliveryInfo: text("delivery_info"),
+  address: text("address"),
   shirtSize: text("shirt_size"),
   // Fakturering & bolag — collected before booking (routine "utlandsfakturor")
   companyName: text("company_name"),
@@ -162,7 +174,10 @@ export const creator = pgTable("creator", {
   preferred: boolean("preferred").notNull().default(false), // guld
   fromCatalog: boolean("from_catalog").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (t) => [
+  index("creator_country_idx").on(t.country),
+  index("creator_preferred_idx").on(t.preferred),
+]);
 
 /* ------------------------------------------------------------------ */
 /*  Bookings — one creator on one campaign = one assignment             */

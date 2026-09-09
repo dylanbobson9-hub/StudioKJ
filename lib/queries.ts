@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNotNull, lte, ne, or } from "drizzle-orm";
 import { requireDb, schema } from "@/lib/db";
 
 /** Ett uppdrag med kampanj, kund och kreatör påhängda. */
@@ -101,6 +101,90 @@ export async function listActiveCreators() {
     byId.set(r.creator.id, e);
   }
   return [...byId.values()];
+}
+
+/* ------------------------------------------------------------------ */
+/*  Kreatörskatalogen                                                   */
+/* ------------------------------------------------------------------ */
+
+export type CreatorFilter = {
+  q?: string;
+  country?: string;
+  platform?: string;
+  gender?: string;
+  gold?: boolean;
+  withEmail?: boolean;
+  maxPrice?: number;
+  sort?: "name" | "price" | "gold";
+  limit?: number;
+  offset?: number;
+};
+
+/** Bygger where-villkoren en gång så lista och export filtrerar exakt lika. */
+function creatorWhere(f: CreatorFilter) {
+  const w = [];
+  if (f.q) {
+    // Fritext över det man faktiskt söker på när man sourcar.
+    const like = `%${f.q}%`;
+    w.push(
+      or(
+        ilike(schema.creator.name, like),
+        ilike(schema.creator.niche, like),
+        ilike(schema.creator.city, like),
+        ilike(schema.creator.country, like),
+        ilike(schema.creator.canFilm, like),
+        ilike(schema.creator.pitch, like),
+        ilike(schema.creator.languages, like),
+      ),
+    );
+  }
+  if (f.country) w.push(eq(schema.creator.country, f.country));
+  if (f.platform) w.push(ilike(schema.creator.platform, `%${f.platform}%`));
+  if (f.gender) w.push(eq(schema.creator.gender, f.gender));
+  if (f.gold) w.push(eq(schema.creator.preferred, true));
+  if (f.withEmail) w.push(isNotNull(schema.creator.email));
+  if (f.maxPrice) w.push(lte(schema.creator.priceEur, f.maxPrice));
+  return w.length ? and(...w) : undefined;
+}
+
+export async function searchCreators(f: CreatorFilter = {}) {
+  const db = requireDb();
+  const order =
+    f.sort === "price"
+      ? [asc(schema.creator.priceEur), asc(schema.creator.name)]
+      : f.sort === "gold"
+        ? [desc(schema.creator.preferred), asc(schema.creator.name)]
+        : [asc(schema.creator.name)];
+
+  const where = creatorWhere(f);
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select()
+      .from(schema.creator)
+      .where(where)
+      .orderBy(...order)
+      .limit(f.limit ?? 60)
+      .offset(f.offset ?? 0),
+    db.select({ total: count() }).from(schema.creator).where(where),
+  ]);
+  return { rows, total };
+}
+
+/** Värdena som faktiskt finns i katalogen – filtren ska aldrig visa tomma val. */
+export async function creatorFacets() {
+  const db = requireDb();
+  const countries = await db
+    .select({ value: schema.creator.country, n: count() })
+    .from(schema.creator)
+    .where(isNotNull(schema.creator.country))
+    .groupBy(schema.creator.country)
+    .orderBy(desc(count()));
+  return { countries: countries.filter((c) => c.value) };
+}
+
+export async function getCreator(id: string) {
+  const [row] = await requireDb().select().from(schema.creator).where(eq(schema.creator.id, id)).limit(1);
+  return row ?? null;
 }
 
 export async function listTeam() {

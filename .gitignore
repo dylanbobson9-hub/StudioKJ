@@ -31,3 +31,7 @@ npm-debug.log*
 
 .vercel
 .env*
+
+# Kreatörskatalogen — personuppgifter, får aldrig committas (repot är publikt)
+/data/
+*.creators.json

@@ -196,32 +196,43 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
         </form>
       </Card>
 
-      <details>
-        <summary
-          className="inline-flex cursor-pointer list-none rounded-lg px-3.5 py-2 text-[13px] font-semibold"
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Vanliga vägen: sök i katalogen. */}
+        <Link
+          href={`/creators?kampanj=${camp.id}`}
+          className="inline-flex rounded-lg px-3.5 py-2 text-[13px] font-semibold"
           style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
         >
           + Koppla kreatör
-        </summary>
-        <Card className="mt-3">
-          <form action={createBooking} className="flex flex-wrap items-end gap-3">
-            <input type="hidden" name="campaignId" value={camp.id} />
-            <F label="Kreatörens namn" name="creatorName" required />
-            <F label="Handle / social" name="handle" placeholder="@namn" />
-            <F label="Plattform" name="platform" placeholder="TikTok" />
-            <F label="E-post" name="email" type="email" />
-            <button
-              className="rounded-lg px-3.5 py-2 text-[13px] font-semibold"
-              style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
-            >
-              Lägg till som Kandidat
-            </button>
-          </form>
-          <p className="mt-2 text-[11.5px]" style={{ color: "var(--muted)" }}>
-            Finns kreatören redan återanvänds profilen. Klockan startar direkt.
-          </p>
-        </Card>
-      </details>
+        </Link>
+
+        <details>
+          <summary
+            className="inline-flex cursor-pointer list-none rounded-lg border px-3.5 py-2 text-[13px] font-semibold"
+            style={{ borderColor: "var(--line-2)", color: "var(--ink-2)" }}
+          >
+            Ny kreatör
+          </summary>
+          <Card className="mt-3">
+            <form action={createBooking} className="flex flex-wrap items-end gap-3">
+              <input type="hidden" name="campaignId" value={camp.id} />
+              <F label="Kreatörens namn" name="creatorName" required />
+              <F label="Handle / social" name="handle" placeholder="@namn" />
+              <F label="Plattform" name="platform" placeholder="TikTok" />
+              <F label="E-post" name="email" type="email" />
+              <button
+                className="rounded-lg px-3.5 py-2 text-[13px] font-semibold"
+                style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
+              >
+                Lägg till som Kandidat
+              </button>
+            </form>
+            <p className="mt-2 text-[11.5px]" style={{ color: "var(--muted)" }}>
+              För någon som inte står i katalogen. Finns namnet redan återanvänds profilen.
+            </p>
+          </Card>
+        </details>
+      </div>
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { requireDb, schema } from "@/lib/db";
 import { getCurrentMember, can } from "@/lib/auth";
 import { stageLabel, type Stage } from "@/lib/stages";
@@ -197,6 +197,38 @@ export async function createBooking(fd: FormData) {
   await logEvent(b.id, actorTag(m), "kopplades till kampanjen");
   revalidatePath(`/campaigns/${campaignId}`);
   revalidatePath("/");
+}
+
+/**
+ * Kopplar en kreatör ur katalogen till en kampanj. Den vanliga vägen in —
+ * `createBooking` finns kvar för någon som inte står i katalogen ännu.
+ */
+export async function attachCreator(fd: FormData) {
+  const m = await requireStaff();
+  const db = requireDb();
+  const campaignId = str(fd, "campaignId");
+  const creatorId = str(fd, "creatorId");
+  if (!campaignId || !creatorId) return;
+
+  const [dup] = await db
+    .select({ id: schema.booking.id })
+    .from(schema.booking)
+    .where(and(eq(schema.booking.campaignId, campaignId), eq(schema.booking.creatorId, creatorId)))
+    .limit(1);
+  if (dup) redirect(`/campaigns/${campaignId}`);
+
+  const [camp] = await db.select().from(schema.campaign).where(eq(schema.campaign.id, campaignId)).limit(1);
+  if (!camp) return;
+
+  const [b] = await db
+    .insert(schema.booking)
+    .values({ campaignId, creatorId, brief: camp.brief ?? null, stageSince: new Date() })
+    .returning();
+  await logEvent(b.id, actorTag(m), "kopplades till kampanjen");
+
+  revalidatePath(`/campaigns/${campaignId}`);
+  revalidatePath("/");
+  redirect(`/campaigns/${campaignId}`);
 }
 
 export async function setStage(fd: FormData) {
