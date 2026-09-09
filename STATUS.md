@@ -19,6 +19,14 @@ Uppdaterad 2026-09-08. Fas 1 av 3 (se planen).
   `/k/<token>` och `/u/<token>` läser access_token och visar kampanj/uppdrag.
 - Utvecklingsläge: appen kör utan databas (browsbar UI).
 
+## Team-vyerna lever (2026-09-09)
+
+Översikt, pipeline-board, kunder & kampanjer, kampanj-dashboard, uppdrags-
+detalj och kreatörslistan hämtar riktig data. Server actions för skapa kund /
+kampanj / uppdrag, flytta i flödet, spara brief och hela tidsplans-flödet
+(påminnelse, starta om klockan, byt ut kreatör, återuppta). Verifierat mot
+databasen end-to-end.
+
 ## Databasen är uppe (2026-09-09)
 
 Supabase-projekt `kj-studio` i **North EU (Stockholm)**, Data API avstängt —
@@ -29,21 +37,14 @@ serverkonsolen istället för att mejlas.
 
 ## Kvar i Fas 1
 
-1. **Team-vyerna med data** – översikt (KPI + attention-lista), pipeline-board,
-   kampanjlista, kampanj-dashboard, uppdragsdetalj med tidslinje.
-2. **Server actions** – `advanceStage`, `saveBrief`, `approveBrief`,
-   `approveContent`, `submitContent`, `addTracking`, `setProduct`,
-   `createBooking`, `issueLink`, `revokeLink`.
-3. **Externa vyerna klara** – kundens godkänn brief/material + begär ändring,
-   kreatörens ladda-upp-material + se tracking.
-4. **Resend-mejlen** – kundlänk, kreatörslänk, "brief redo", "material redo",
+1. **Externa vyerna klara** – kundens godkänn brief/material + begär ändring,
+   kreatörens ladda-upp-material + se tracking, samt "skapa länk"-knappen.
+2. **Fler server actions** – produkt/tracking, godkännanden, leveransspec.
+3. **Resend-mejlen** – kundlänk, kreatörslänk, "brief redo", "material redo",
    "godkänd – spela in", "ändring begärd".
-5. **Tidsplan/SLA med riktiga notiser** – schemat har `stageSince`,
-   `reminderSentAt` och `SLA_HOURS` (24 h påminnelse, 48 h byt kreatör).
-   Prototypen larmar bara i appen; här behövs ett **schemalagt jobb**
-   (Vercel Cron, var 30:e min) som mejlar/Slackar den ansvariga när en
-   deadline passeras, även när ingen har appen öppen.
-6. **Deploy** – Vercel, domän, riktig data, teamet testar.
+4. **Tidsplan med riktiga notiser** – schemalagt jobb (Vercel Cron) som mejlar
+   ansvarig när 24 h/48 h passeras även när ingen har appen öppen.
+5. **Deploy** – Vercel, domän, riktig data, teamet testar.
 
 ## Behövs från KJ
 
