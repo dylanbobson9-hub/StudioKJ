@@ -1,6 +1,7 @@
 # Status
 
-Uppdaterad 2026-09-08. Fas 1 av 3 (se planen).
+Uppdaterad 2026-09-09. **Fas 1–3 byggda och uppe i produktion.**
+Kvar: domänen, teamet in, och en riktig kampanj körd hela vägen.
 
 ## Klart
 
@@ -129,28 +130,7 @@ riktiga personer, och **repot är publikt**. Datan finns därför bara i
 databasen: `scripts/import-catalog.mjs` läser en lokal fil rakt in i Postgres
 och `/data/` är gitignorerad. Committa aldrig katalogen.
 
-## Kvar i Fas 1
-
-1. **Domänen** – `studio.kjmarketingsweden.com` (CNAME hos utvecklarna).
-2. **Teamet in** och en riktig kampanj körd hela vägen.
-3. **Överväg att göra repot privat** – se ovan.
-
-## Behövs från KJ
-
-- [ ] DNS för `studio.kjmarketingsweden.com` → Vercel
-- [x] `CRON_SECRET` – slumpad av deploy-skriptet
-- [x] `DATABASE_URL` + `DATABASE_URL_DIRECT` – Supabase `kj-studio`
-- [x] `RESEND_API_KEY` + verifierad avsändardomän
-- [ ] Team-lista: namn + e-post + roll
-- [ ] Vercel-projekt kopplat till detta repo
-- [ ] Vänsterstapelns SVG (logo-01?) om den finns – annars kör vi med approximationen
-
-## Fas 2 & 3
-
-- Fas 2: ekonomi (`campaign_econ`, `booking_econ`, `price_proposal`) + rollspärr.
-- Fas 3: kreatörskatalogen (~1 400) med sök/filter/guld/AI + redigerar-batchar.
-
-## Fas 2: ekonomin (2026-09-09)
+## Ekonomin (2026-09-09)
 
 `lib/econ.ts` är **enda** stället där en kampanjs siffror räknas fram. Både
 ekonomivyn och kundens portal läser samma funktion — det var två uträkningar
@@ -168,3 +148,20 @@ arvoden, utlägg eller marginal.
 
 Verifierat mot databasen: 5000 + 5000 + 2250 = 12 250 kr fakturerat,
 7 400 kostnad, 4 850 vinst, 40 % marginal. Byte av kreatör → 7 250 kr.
+
+## Kvar
+
+1. **Domänen** – `studio.kjmarketingsweden.com`, CNAME hos KJ:s utvecklare
+   (Route 53). Rör inte MX-posterna på roten – där ligger Google Workspace.
+   Byt `APP_URL` i Vercel när den är live.
+2. **Teamet in** – Personer → Bjud in. Bara adresser i `team_member` kan logga in.
+3. **En riktig kampanj hela vägen** innan teamet släpps in på allvar.
+4. **Överväg privat repo** – ingen data ligger där, men koden beskriver hela
+   produktionsmodellen. KJ har sett argumenten och valt att låta det vara
+   publikt tills vidare.
+
+### Om vi bygger vidare
+
+- Redigerar-batchar (Fas 3 i den ursprungliga planen) – aldrig påbörjat.
+- Prisförslag till kund som eget flöde, istället för fasta belopp.
+- `vercel git connect` för deploy på varje push.
