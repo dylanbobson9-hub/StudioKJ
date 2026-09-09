@@ -30,7 +30,12 @@ Uppdaterad 2026-09-08. Fas 1 av 3 (se planen).
    kreatörens ladda-upp-material + se tracking.
 4. **Resend-mejlen** – kundlänk, kreatörslänk, "brief redo", "material redo",
    "godkänd – spela in", "ändring begärd".
-5. **Deploy** – Vercel, domän, riktig data, teamet testar.
+5. **Tidsplan/SLA med riktiga notiser** – schemat har `stageSince`,
+   `reminderSentAt` och `SLA_HOURS` (24 h påminnelse, 48 h byt kreatör).
+   Prototypen larmar bara i appen; här behövs ett **schemalagt jobb**
+   (Vercel Cron, var 30:e min) som mejlar/Slackar den ansvariga när en
+   deadline passeras, även när ingen har appen öppen.
+6. **Deploy** – Vercel, domän, riktig data, teamet testar.
 
 ## Behövs från KJ
 

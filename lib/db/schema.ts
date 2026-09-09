@@ -42,6 +42,31 @@ export type TeamRole = (typeof TEAM_ROLES)[number];
 export const APPROVAL = ["none", "pending", "approved", "changes", "rejected"] as const;
 export type Approval = (typeof APPROVAL)[number];
 
+/**
+ * KJ:s tidsplan. Hours a booking may sit in a stage before it is late.
+ * `escalate` is the second deadline — only outreach has one, and passing it
+ * means the creator gets swapped out. Drives the "Tidsplanen brinner" alarm
+ * and (once a scheduled job exists) the reminder emails.
+ */
+export const SLA_HOURS: Record<string, { h: number; escalate?: number; what: string }> = {
+  sourcing: { h: 4, what: "Matcha kreatör och skicka förfrågan" },
+  creators_review: { h: 48, what: "Kunden godkänner urvalet" },
+  price_talk: { h: 24, escalate: 48, what: "Svar från kreatören på förfrågan" },
+  confirmed: { h: 24, what: "Kom igång – produkt och brief ut" },
+  product_sent: { h: 120, what: "Produkten når kreatören" },
+  product_received: { h: 24, what: "Vidare till manus/brief" },
+  script: { h: 24, what: "Manus klart" },
+  brief_review: { h: 48, what: "Kunden godkänner briefen" },
+  brief_approved: { h: 24, what: "Kreatören sätter igång" },
+  filming: { h: 120, what: "Inspelning (3–5 dagar)" },
+  editing: { h: 24, what: "Granskning och redigering" },
+  content_review: { h: 48, what: "Kunden godkänner materialet" },
+  content_approved: { h: 24, what: "Planera publicering" },
+  scheduled: { h: 72, what: "Publicering" },
+};
+/** "I rull" senast dag 7–8 räknat från att uppdraget skapades. */
+export const SLA_TARGET_DAYS = 8;
+
 /* ------------------------------------------------------------------ */
 /*  Team                                                                */
 /* ------------------------------------------------------------------ */
@@ -191,10 +216,14 @@ export const booking = pgTable(
     contentSubmittedAt: timestamp("content_submitted_at", { withTimezone: true }),
     publishedUrl: text("published_url"),
 
-    // hold
+    // hold ("swapped" = creator replaced for missing the response deadline)
     holdActive: boolean("hold_active").notNull().default(false),
     holdReason: text("hold_reason"),
     holdNote: text("hold_note"),
+
+    // SLA clock — see SLA_HOURS. Resets every time `stage` changes.
+    stageSince: timestamp("stage_since", { withTimezone: true }).defaultNow().notNull(),
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
