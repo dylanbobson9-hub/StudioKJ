@@ -6,8 +6,8 @@ import { eq } from "drizzle-orm";
 import { requireDb, schema } from "@/lib/db";
 import { getCurrentMember, can } from "@/lib/auth";
 import { stageLabel, type Stage } from "@/lib/stages";
-import { STAGES } from "@/lib/db/schema";
-import { newToken, clientLink, creatorLink } from "@/lib/tokens";
+import { STAGES, TEAM_ROLES, type TeamRole } from "@/lib/db/schema";
+import { newToken, clientLink, creatorLink, APP_URL } from "@/lib/tokens";
 import { sendEmail, emailShell } from "@/lib/email";
 import { notify, STAGE_EVENT } from "@/lib/notify";
 
@@ -95,6 +95,69 @@ export async function deleteCampaign(fd: FormData) {
   revalidatePath("/pipeline");
   revalidatePath("/");
   redirect("/campaigns");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Personer                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Bjud in någon. `team_member` är hela behörighetsspärren – en adress som
+ * inte ligger här kan inte logga in, och inloggningssidan säger medvetet inte
+ * om adressen finns eller inte.
+ */
+export async function addTeamMember(fd: FormData) {
+  await requireAdmin();
+  const db = requireDb();
+  const email = str(fd, "email").toLowerCase();
+  const name = str(fd, "name");
+  const role = str(fd, "role") as TeamRole;
+  if (!email || !name || !TEAM_ROLES.includes(role)) return;
+
+  const existing = await db.query.teamMember.findFirst({ where: eq(schema.teamMember.email, email) });
+  if (existing) return;
+
+  await db.insert(schema.teamMember).values({ email, name, role });
+
+  // Ett trasigt välkomstmejl får inte betyda att personen inte blev upplagd.
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Du har fått tillgång till KJ Studio",
+      html: emailShell(
+        `<p>Hej ${name.split(/\s+/)[0]}! Du är upplagd i KJ Studio – vårt verktyg för att driva
+          UGC-produktionerna från kreatörsurval till publicering.</p>
+         <p style="margin:20px 0"><a href="${APP_URL}/login"
+           style="background:#1f6df0;color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600">
+           Logga in</a></p>
+         <p style="font-size:12px;color:#868ea1">Inget lösenord – skriv den här adressen så mejlas en inloggningslänk.</p>`,
+      ),
+    });
+  } catch (err) {
+    console.error("[team] välkomstmejl misslyckades:", err);
+  }
+
+  revalidatePath("/team");
+}
+
+export async function setTeamRole(fd: FormData) {
+  const me = await requireAdmin();
+  const id = str(fd, "memberId");
+  const role = str(fd, "role") as TeamRole;
+  if (!id || !TEAM_ROLES.includes(role)) return;
+  // Sista admin får inte degradera sig själv – då låser vi ute alla.
+  if (id === me.id) return;
+  await requireDb().update(schema.teamMember).set({ role }).where(eq(schema.teamMember.id, id));
+  revalidatePath("/team");
+}
+
+/** Tar bort tillgången. Sessionerna faller med (FK cascade). */
+export async function removeTeamMember(fd: FormData) {
+  const me = await requireAdmin();
+  const id = str(fd, "memberId");
+  if (!id || id === me.id) return;
+  await requireDb().delete(schema.teamMember).where(eq(schema.teamMember.id, id));
+  revalidatePath("/team");
 }
 
 /* ------------------------------------------------------------------ */
