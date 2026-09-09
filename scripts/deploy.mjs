@@ -26,8 +26,11 @@ const PROD_URL = `https://${PROJECT}.vercel.app`;
 /** Variabler som bara hör hemma lokalt. */
 const SKIP = new Set(["SEED_ADMIN_EMAIL", "SEED_ADMIN_NAME"]);
 
+// På Windows blockerar körningspolicyn npx.ps1 — .cmd-varianten går alltid.
+const NPX = process.platform === "win32" ? "npx.cmd" : "npx";
+
 const vercel = (args, opts = {}) =>
-  spawnSync("npx", ["--yes", "vercel@latest", ...args], {
+  spawnSync(NPX, ["--yes", "vercel@latest", ...args], {
     cwd: ROOT,
     encoding: "utf8",
     shell: process.platform === "win32",
