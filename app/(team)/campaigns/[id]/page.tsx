@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHead, Card } from "@/components/ui";
 import { StagePill, SlaPill, HoldPill, Progress } from "@/components/pills";
+import { ConfirmSubmit, TrashIcon } from "@/components/ConfirmSubmit";
 import { getCampaign, listBookings } from "@/lib/queries";
-import { createBooking } from "@/lib/actions";
+import { getCurrentMember, can } from "@/lib/auth";
+import { createBooking, deleteCampaign } from "@/lib/actions";
 import { PHASES, phaseOf, progressPct, ago, fmtDate } from "@/lib/stages";
 
 export default async function CampaignPage({ params }: PageProps<"/campaigns/[id]">) {
@@ -12,6 +14,7 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
   if (!camp) notFound();
 
   const bookings = await listBookings({ campaignId: id });
+  const isAdmin = can.managePeople(await getCurrentMember());
   const active = bookings.filter((b) => !b.holdActive);
   const dropped = bookings.filter((b) => b.holdActive);
 
@@ -26,6 +29,21 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
         sub={[camp.client.name, camp.refNo, camp.market, camp.startsOn ? `start ${fmtDate(camp.startsOn)}` : null]
           .filter(Boolean)
           .join(" · ")}
+        action={
+          isAdmin ? (
+            <form action={deleteCampaign}>
+              <input type="hidden" name="campaignId" value={camp.id} />
+              <ConfirmSubmit
+                title="Ta bort kampanj"
+                message={`Ta bort ${camp.name}? Går inte att ångra – tar även med ${bookings.length} uppdrag.`}
+                className="grid size-[32px] place-items-center rounded-lg border"
+                style={{ borderColor: "var(--line-2)", background: "var(--surface)", color: "var(--ink-2)" }}
+              >
+                <TrashIcon />
+              </ConfirmSubmit>
+            </form>
+          ) : null
+        }
       />
 
       <div className="mb-5 flex flex-wrap gap-2">

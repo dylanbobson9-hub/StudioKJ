@@ -102,3 +102,7 @@ h4 {
 a {
   color: inherit;
 }
+/* Knapp-liknande <summary> ska inte visa webbläsarens triangel. */
+summary.list-none::-webkit-details-marker {
+  display: none;
+}

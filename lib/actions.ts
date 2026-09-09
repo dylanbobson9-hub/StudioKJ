@@ -67,6 +67,33 @@ export async function createCampaign(fd: FormData) {
   redirect(`/campaigns/${c.id}`);
 }
 
+async function requireAdmin() {
+  const m = await getCurrentMember();
+  if (!m || !can.managePeople(m)) throw new Error("Bara Admin kan ta bort.");
+  return m;
+}
+
+/** Tar även med kampanjer, uppdrag, tidslinjer och länkar (FK cascade). */
+export async function deleteClient(fd: FormData) {
+  await requireAdmin();
+  const id = str(fd, "clientId");
+  if (!id) return;
+  await requireDb().delete(schema.client).where(eq(schema.client.id, id));
+  revalidatePath("/campaigns");
+  revalidatePath("/");
+}
+
+export async function deleteCampaign(fd: FormData) {
+  await requireAdmin();
+  const id = str(fd, "campaignId");
+  if (!id) return;
+  await requireDb().delete(schema.campaign).where(eq(schema.campaign.id, id));
+  revalidatePath("/campaigns");
+  revalidatePath("/pipeline");
+  revalidatePath("/");
+  redirect("/campaigns");
+}
+
 /* ------------------------------------------------------------------ */
 /*  Kreatörer & uppdrag                                                 */
 /* ------------------------------------------------------------------ */
