@@ -25,3 +25,6 @@ npm-debug.log*
 
 # lokalt lösenord under uppsättning – raderas av setup-db
 .db-password.txt
+
+# lokal Resend-nyckel under uppsättning – raderas av set-resend
+.resend-key.txt
