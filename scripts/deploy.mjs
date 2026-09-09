@@ -23,8 +23,12 @@ const ENV_PATH = path.join(ROOT, ".env.local");
 const PROJECT = "studio-kj";
 const PROD_URL = `https://${PROJECT}.vercel.app`;
 
-/** Variabler som bara hör hemma lokalt. */
-const SKIP = new Set(["SEED_ADMIN_EMAIL", "SEED_ADMIN_NAME"]);
+/**
+ * Variabler som bara hör hemma lokalt. VERCEL_OIDC_TOKEN skriver Vercels eget
+ * verktyg in i .env.local; den är kortlivad och ska aldrig sättas som
+ * miljövariabel i projektet.
+ */
+const SKIP = new Set(["SEED_ADMIN_EMAIL", "SEED_ADMIN_NAME", "VERCEL_OIDC_TOKEN"]);
 
 // På Windows blockerar körningspolicyn npx.ps1 — .cmd-varianten går alltid.
 const NPX = process.platform === "win32" ? "npx.cmd" : "npx";
