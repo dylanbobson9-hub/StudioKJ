@@ -19,6 +19,25 @@ Uppdaterad 2026-09-08. Fas 1 av 3 (se planen).
   `/k/<token>` och `/u/<token>` läser access_token och visar kampanj/uppdrag.
 - Utvecklingsläge: appen kör utan databas (browsbar UI).
 
+## Externa länkarna lever (2026-09-09)
+
+Kund och kreatör kommer in helt utan konto, via oräkneliga engångslänkar.
+
+- **/k/<token>** – kunden ser sina kreatörer (kandidater och utbytta göms),
+  godkänner kreatörsurval, brief och material eller begär ändring med
+  kommentar, och kan lägga in spårningslänk när produkten skickas.
+  Disclaimern ligger under listan.
+- **/u/<token>** – kreatören ser brief, leveransspec, produkt/tracking och
+  uppladdningsmapp, bekräftar mottagen produkt, laddar upp material och
+  markerar publicerat. Begärd ändring visas överst med kundens kommentar.
+- Länkar skapas per kampanj respektive uppdrag i team-vyn, kan mejlas direkt,
+  kopieras och återkallas. Varje åtgärd loggas i tidslinjen som "Kund" eller
+  "Kreatör".
+
+Verifierat end-to-end: kund godkänner kreatör → steget går till Offert &
+förfrågan och 24h-klockan startar → kreatör laddar upp → kund begär ändring →
+kreatören ser kommentaren och kan skicka ny version.
+
 ## Team-vyerna lever (2026-09-09)
 
 Översikt, pipeline-board, kunder & kampanjer, kampanj-dashboard, uppdrags-
@@ -37,14 +56,13 @@ serverkonsolen istället för att mejlas.
 
 ## Kvar i Fas 1
 
-1. **Externa vyerna klara** – kundens godkänn brief/material + begär ändring,
-   kreatörens ladda-upp-material + se tracking, samt "skapa länk"-knappen.
-2. **Fler server actions** – produkt/tracking, godkännanden, leveransspec.
-3. **Resend-mejlen** – kundlänk, kreatörslänk, "brief redo", "material redo",
-   "godkänd – spela in", "ändring begärd".
-4. **Tidsplan med riktiga notiser** – schemalagt jobb (Vercel Cron) som mejlar
+1. **Resend** – nyckel + verifierad avsändardomän så länkarna och
+   avisreingarna faktiskt mejlas (loggas i konsolen så länge).
+2. **Aviseringar** – "brief redo", "material redo", "godkänd – spela in",
+   "ändring begärd" till rätt part när ett steg byts.
+3. **Tidsplan med riktiga notiser** – schemalagt jobb (Vercel Cron) som mejlar
    ansvarig när 24 h/48 h passeras även när ingen har appen öppen.
-5. **Deploy** – Vercel, domän, riktig data, teamet testar.
+4. **Deploy** – Vercel, domän, riktig data, teamet testar.
 
 ## Behövs från KJ
 

@@ -10,7 +10,13 @@ export async function listBookings(opts: { campaignId?: string } = {}) {
   const rows = await db
     .select({
       b: schema.booking,
-      creator: { id: schema.creator.id, name: schema.creator.name, platform: schema.creator.platform, preferred: schema.creator.preferred },
+      creator: {
+        id: schema.creator.id,
+        name: schema.creator.name,
+        platform: schema.creator.platform,
+        email: schema.creator.email,
+        preferred: schema.creator.preferred,
+      },
       campaign: { id: schema.campaign.id, name: schema.campaign.name, refNo: schema.campaign.refNo },
       client: { id: schema.client.id, name: schema.client.name },
     })

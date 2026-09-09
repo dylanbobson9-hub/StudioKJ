@@ -7,6 +7,8 @@ import { requireDb, schema } from "@/lib/db";
 import { getCurrentMember, can } from "@/lib/auth";
 import { stageLabel, type Stage } from "@/lib/stages";
 import { STAGES } from "@/lib/db/schema";
+import { newToken, clientLink, creatorLink } from "@/lib/tokens";
+import { sendEmail, emailShell } from "@/lib/email";
 
 async function requireStaff() {
   const m = await getCurrentMember();
@@ -235,6 +237,104 @@ export async function clearHold(fd: FormData) {
     .where(eq(schema.booking.id, id));
   await logEvent(id, actorTag(m), "återupptog uppdraget");
   revalidatePath("/");
+  revalidatePath(`/bookings/${id}`);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Länkar till kund och kreatör                                        */
+/* ------------------------------------------------------------------ */
+
+export async function issueClientLink(fd: FormData) {
+  await requireStaff();
+  const db = requireDb();
+  const campaignId = str(fd, "campaignId");
+  const email = str(fd, "email");
+  if (!campaignId) return;
+
+  const token = newToken();
+  await db.insert(schema.accessToken).values({ token, kind: "client", campaignId, email: email || null });
+
+  const [camp] = await db.select().from(schema.campaign).where(eq(schema.campaign.id, campaignId)).limit(1);
+  if (email) {
+    await sendEmail({
+      to: email,
+      subject: `Följ ${camp?.name ?? "kampanjen"} – KJ Studio`,
+      html: emailShell(
+        `<p>Här är er länk till <b>${camp?.name ?? "kampanjen"}</b>. Ni ser vilka kreatörer som är på gång,
+          vilket steg var och en ligger i, och godkänner brief och material när det är er tur.</p>
+         <p style="margin:20px 0"><a href="${clientLink(token)}"
+           style="background:#1f6df0;color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600">
+           Öppna kampanjen</a></p>
+         <p style="font-size:12px;color:#868ea1">Länken är personlig – dela den inte vidare.</p>`,
+      ),
+    });
+  }
+  revalidatePath(`/campaigns/${campaignId}`);
+}
+
+export async function issueCreatorLink(fd: FormData) {
+  await requireStaff();
+  const db = requireDb();
+  const bookingId = str(fd, "bookingId");
+  const email = str(fd, "email");
+  if (!bookingId) return;
+
+  const token = newToken();
+  await db.insert(schema.accessToken).values({ token, kind: "creator", bookingId, email: email || null });
+
+  const [b] = await db.select().from(schema.booking).where(eq(schema.booking.id, bookingId)).limit(1);
+  const [camp] = b
+    ? await db.select().from(schema.campaign).where(eq(schema.campaign.id, b.campaignId)).limit(1)
+    : [null];
+  if (email) {
+    await sendEmail({
+      to: email,
+      subject: `Ditt uppdrag för ${camp?.name ?? "en kampanj"} – KJ Studio`,
+      html: emailShell(
+        `<p>Här är din sida för uppdraget <b>${camp?.name ?? ""}</b>. Där hittar du briefen, info om produkten
+          och stället där du laddar upp materialet.</p>
+         <p style="margin:20px 0"><a href="${creatorLink(token)}"
+           style="background:#1f6df0;color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600">
+           Öppna uppdraget</a></p>
+         <p style="font-size:12px;color:#868ea1">Länken är personlig – dela den inte vidare.</p>`,
+      ),
+    });
+  }
+  revalidatePath(`/bookings/${bookingId}`);
+}
+
+export async function revokeLink(fd: FormData) {
+  await requireStaff();
+  const token = str(fd, "token");
+  if (!token) return;
+  await requireDb()
+    .update(schema.accessToken)
+    .set({ revoked: true })
+    .where(eq(schema.accessToken.token, token));
+  revalidatePath(str(fd, "back") || "/campaigns");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Produkt & frakt                                                     */
+/* ------------------------------------------------------------------ */
+
+export async function setProduct(fd: FormData) {
+  const m = await requireStaff();
+  const id = str(fd, "bookingId");
+  if (!id) return;
+  await requireDb()
+    .update(schema.booking)
+    .set({
+      productName: str(fd, "productName") || null,
+      productAddress: str(fd, "productAddress") || null,
+      carrier: str(fd, "carrier") || null,
+      trackingUrl: str(fd, "trackingUrl") || null,
+      sentOn: str(fd, "sentOn") || null,
+      uploadFolderUrl: str(fd, "uploadFolderUrl") || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.booking.id, id));
+  await logEvent(id, actorTag(m), "uppdaterade produkt- och leveransinfo");
   revalidatePath(`/bookings/${id}`);
 }
 

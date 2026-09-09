@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { PageHead, Card } from "@/components/ui";
 import { StagePill, SlaPill, HoldPill, Progress } from "@/components/pills";
 import { ConfirmSubmit, TrashIcon } from "@/components/ConfirmSubmit";
-import { getCampaign, listBookings } from "@/lib/queries";
+import { CopyLink } from "@/components/LinkPanel";
+import { getCampaign, listBookings, listAccessTokens } from "@/lib/queries";
 import { getCurrentMember, can } from "@/lib/auth";
-import { createBooking, deleteCampaign } from "@/lib/actions";
+import { createBooking, deleteCampaign, issueClientLink, revokeLink } from "@/lib/actions";
+import { APP_URL } from "@/lib/tokens";
 import { PHASES, phaseOf, progressPct, ago, fmtDate } from "@/lib/stages";
 
 export default async function CampaignPage({ params }: PageProps<"/campaigns/[id]">) {
@@ -13,8 +15,12 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
   const camp = await getCampaign(id);
   if (!camp) notFound();
 
-  const bookings = await listBookings({ campaignId: id });
-  const isAdmin = can.managePeople(await getCurrentMember());
+  const [bookings, links, me] = await Promise.all([
+    listBookings({ campaignId: id }),
+    listAccessTokens({ campaignId: id }),
+    getCurrentMember(),
+  ]);
+  const isAdmin = can.managePeople(me);
   const active = bookings.filter((b) => !b.holdActive);
   const dropped = bookings.filter((b) => b.holdActive);
 
@@ -133,9 +139,66 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
         </details>
       )}
 
+      {/* ---- Kundlänk ---- */}
+      <Card className="mb-5">
+        <div className="mb-2.5 text-[11px] font-semibold tracking-[0.11em] uppercase" style={{ color: "var(--muted)" }}>
+          Kundens länk
+        </div>
+        {links.length ? (
+          <div className="flex flex-col gap-2">
+            {links.map((l) => (
+              <div key={l.token} className="flex flex-wrap items-center gap-2">
+                <CopyLink url={`${APP_URL}/k/${l.token}`} />
+                <span className="text-[11.5px]" style={{ color: "var(--muted)" }}>
+                  {l.email ? `mejlad till ${l.email}` : "ej mejlad"} ·{" "}
+                  {l.lastSeenAt ? `öppnad ${ago(l.lastSeenAt)}` : "aldrig öppnad"}
+                </span>
+                <form action={revokeLink}>
+                  <input type="hidden" name="token" value={l.token} />
+                  <input type="hidden" name="back" value={`/campaigns/${camp.id}`} />
+                  <ConfirmSubmit
+                    message="Återkalla länken? Kunden kommer inte in längre."
+                    className="rounded-lg border px-2.5 py-1.5 text-[12px]"
+                    style={{ borderColor: "var(--line-2)", background: "var(--surface)", color: "var(--ink-2)" }}
+                  >
+                    Återkalla
+                  </ConfirmSubmit>
+                </form>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mb-3 text-[12.5px]" style={{ color: "var(--ink-2)" }}>
+            Ingen länk skapad ännu. Kunden ser sina kreatörer, vilket steg de är på, och godkänner brief och
+            material — utan konto. Kandidater syns inte förrän ni flyttar dem till &quot;Föreslagen till kund&quot;.
+          </p>
+        )}
+        <form action={issueClientLink} className="mt-3 flex flex-wrap items-end gap-2">
+          <input type="hidden" name="campaignId" value={camp.id} />
+          <div>
+            <label className="mb-1 block text-[11.5px]" style={{ color: "var(--ink-2)" }}>
+              Mejla länken till (valfritt)
+            </label>
+            <input
+              name="email"
+              type="email"
+              placeholder="kontakt@kund.se"
+              className="rounded-lg border px-3 py-2 text-[13px]"
+              style={{ borderColor: "var(--line-2)", background: "var(--surface)", minWidth: 220 }}
+            />
+          </div>
+          <button
+            className="rounded-lg border px-3.5 py-2 text-[13px] font-semibold"
+            style={{ borderColor: "var(--line-2)", background: "var(--surface)" }}
+          >
+            {links.length ? "Skapa ny länk" : "Skapa kundlänk"}
+          </button>
+        </form>
+      </Card>
+
       <details>
         <summary
-          className="inline-flex cursor-pointer rounded-lg px-3.5 py-2 text-[13px] font-semibold"
+          className="inline-flex cursor-pointer list-none rounded-lg px-3.5 py-2 text-[13px] font-semibold"
           style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
         >
           + Koppla kreatör
