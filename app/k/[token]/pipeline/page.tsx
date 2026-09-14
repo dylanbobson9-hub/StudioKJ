@@ -29,7 +29,9 @@ export default async function PortalPipeline({ params }: PageProps<"/k/[token]/p
           </p>
         </Card>
       ) : (
-        <div className="grid gap-3 md:grid-cols-5">
+        // Fem faser får inte klippas – de scrollar i sin egen låda i stället.
+        <div className="-mx-5 overflow-x-auto px-5 pb-2">
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(5, minmax(150px, 1fr))" }}>
           {PHASES.map((phase) => {
             const inPhase = p.bookings.filter((b) => phaseOf(b.stage) === phase.id);
             return (
@@ -75,6 +77,7 @@ export default async function PortalPipeline({ params }: PageProps<"/k/[token]/p
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </PortalShell>
