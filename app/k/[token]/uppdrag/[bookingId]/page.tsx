@@ -12,6 +12,7 @@ import {
   clientSetTracking,
 } from "@/lib/token-actions";
 import { ago } from "@/lib/stages";
+import { CopyAddress } from "@/components/CopyAddress";
 
 export const metadata = { title: "Uppdrag", robots: { index: false, follow: false } };
 
@@ -181,6 +182,46 @@ export default async function PortalBooking({ params }: PageProps<"/k/[token]/up
       {(b.stage === "confirmed" || b.stage === "product_sent") && (
         <Card className="mb-4">
           <h2 className="mb-2 text-[13.5px] font-semibold">Skickar ni produkten?</h2>
+
+          {b.shipTo ? (
+            <div
+              className="mb-3 rounded-lg border p-3"
+              style={{ borderColor: "var(--line)", background: "var(--surface-2)" }}
+            >
+              <div className="mb-1.5 text-[11px]" style={{ color: "var(--muted)" }}>
+                Skicka till
+              </div>
+              <div className="text-[13.5px] font-semibold">{b.shipTo.name}</div>
+              <div className="text-[13px] whitespace-pre-line" style={{ color: "var(--ink-2)" }}>
+                {b.shipTo.address}
+              </div>
+              {b.shipTo.shirtSize && (
+                <div className="mt-1 text-[12.5px]" style={{ color: "var(--ink-2)" }}>
+                  <span style={{ color: "var(--muted)" }}>Storlek: </span>
+                  {b.shipTo.shirtSize}
+                </div>
+              )}
+              {b.productName && (
+                <div className="mt-1 text-[12.5px]" style={{ color: "var(--ink-2)" }}>
+                  <span style={{ color: "var(--muted)" }}>Produkt: </span>
+                  {b.productName}
+                </div>
+              )}
+              <CopyAddress
+                text={`${b.shipTo.name}
+${b.shipTo.address}`}
+                className="mt-2 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium"
+              />
+              <p className="mt-2 text-[11px]" style={{ color: "var(--muted)" }}>
+                Adressen gäller den här leveransen. Kontakta kreatören enbart via KJ Marketing Sweden.
+              </p>
+            </div>
+          ) : (
+            <p className="mb-3 text-[12.5px]" style={{ color: "var(--muted)" }}>
+              Vi återkommer med leveransadressen så fort kreatören bekräftat.
+            </p>
+          )}
+
           <form action={clientSetTracking} className="flex flex-wrap items-end gap-2">
             <input type="hidden" name="token" value={token} />
             <input type="hidden" name="bookingId" value={b.id} />

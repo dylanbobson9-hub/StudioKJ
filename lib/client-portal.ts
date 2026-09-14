@@ -28,6 +28,18 @@ export type PublicCreator = {
   portfolioUrl: string | null;
 };
 
+/**
+ * Leveransuppgifter. Enda tillfället en kreatörs adress lämnar huset: kunden
+ * ska skicka produkten dit och kan inte göra det blint. Sätts bara för det
+ * enskilda uppdraget, och bara i fraktsteget — aldrig som ett fält man kan
+ * bläddra i katalogen efter.
+ */
+export type ShipTo = {
+  name: string;
+  address: string;
+  shirtSize: string | null;
+};
+
 export type PortalBooking = {
   id: string;
   stage: Stage;
@@ -40,6 +52,8 @@ export type PortalBooking = {
   trackingUrl: string | null;
   carrier: string | null;
   publishedUrl: string | null;
+  productName: string | null;
+  shipTo: ShipTo | null;
   deliverableType: string;
   deliverableQty: number;
   updatedAt: Date;
@@ -56,6 +70,17 @@ export type Portal = {
 };
 
 const WAITING_STAGES: Stage[] = ["creators_review", "brief_review", "content_review"];
+
+/** Adressen KJ lagt in på uppdraget går före kreatörens egen. */
+function shipTo(
+  b: typeof schema.booking.$inferSelect,
+  c: typeof schema.creator.$inferSelect,
+): ShipTo | null {
+  if (b.stage !== "confirmed" && b.stage !== "product_sent") return null;
+  const address = b.productAddress || c.address;
+  if (!address) return null;
+  return { name: c.name, address, shirtSize: c.shirtSize };
+}
 
 function publicCreator(c: typeof schema.creator.$inferSelect): PublicCreator {
   return {
@@ -104,6 +129,8 @@ export async function loadPortal(token: string): Promise<Portal | null> {
       trackingUrl: r.b.trackingUrl,
       carrier: r.b.carrier,
       publishedUrl: r.b.publishedUrl,
+      productName: r.b.productName,
+      shipTo: shipTo(r.b, r.creator),
       deliverableType: r.b.deliverableType,
       deliverableQty: r.b.deliverableQty,
       updatedAt: r.b.updatedAt,
