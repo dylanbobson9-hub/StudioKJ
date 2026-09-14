@@ -46,28 +46,32 @@ export default async function ClientView({ params }: PageProps<"/k/[token]">) {
         <Panel>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <span className="text-[13px]" style={{ color: "var(--ink-2)" }}>
-              Er kostnad för kampanjen
+              {pl.fixedPrice ? "Överenskommen budget" : "Er kostnad för kampanjen"}
             </span>
             <span className="text-[19px] font-semibold">{kr(pl.invoiced)}</span>
           </div>
-          <div className="mt-2 border-t pt-2 text-[12.5px]" style={{ borderColor: "var(--line)" }}>
-            {pl.lines
-              .filter((l) => l.clientPrice > 0)
-              .map((l) => (
-                <div key={l.bookingId} className="flex justify-between py-0.5">
-                  <span style={{ color: "var(--ink-2)" }}>{l.creatorName}</span>
-                  <span>{kr(l.clientPrice)}</span>
+          {/* Fast budget = ett pris för hela leveransen. Ingen uppdelning:
+              kunden köper ett resultat, inte ett antal kreatörer. */}
+          {!pl.fixedPrice && (
+            <div className="mt-2 border-t pt-2 text-[12.5px]" style={{ borderColor: "var(--line)" }}>
+              {pl.lines
+                .filter((l) => l.clientPrice > 0)
+                .map((l) => (
+                  <div key={l.bookingId} className="flex justify-between py-0.5">
+                    <span style={{ color: "var(--ink-2)" }}>{l.creatorName}</span>
+                    <span>{kr(l.clientPrice)}</span>
+                  </div>
+                ))}
+              {pl.agencyFee > 0 && (
+                <div className="flex justify-between py-0.5">
+                  <span style={{ color: "var(--ink-2)" }}>Produktionsledning KJ</span>
+                  <span>{kr(pl.agencyFee)}</span>
                 </div>
-              ))}
-            {pl.agencyFee > 0 && (
-              <div className="flex justify-between py-0.5">
-                <span style={{ color: "var(--ink-2)" }}>Produktionsledning KJ</span>
-                <span>{kr(pl.agencyFee)}</span>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
           <p className="mt-2 text-[11.5px]" style={{ color: "var(--muted)" }}>
-            Exklusive moms. Preliminärt tills kampanjen är slutförd.
+            Exklusive moms.{pl.fixedPrice ? " Fast pris för hela leveransen." : " Preliminärt tills kampanjen är slutförd."}
           </p>
         </Panel>
       )}

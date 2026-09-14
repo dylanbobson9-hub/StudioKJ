@@ -5,6 +5,7 @@ import { ConfirmSubmit, TrashIcon } from "@/components/ConfirmSubmit";
 import { listClientsWithCampaigns } from "@/lib/queries";
 import { getCurrentMember, can } from "@/lib/auth";
 import { createClient, createCampaign, deleteClient, deleteCampaign } from "@/lib/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 import { progressPct, fmtDate } from "@/lib/stages";
 
 export default async function CampaignsPage() {
@@ -217,11 +218,12 @@ function Field({
 
 function PrimaryBtn({ children }: { children: React.ReactNode }) {
   return (
-    <button
+    <SubmitButton
+      pendingLabel="Skapar…"
       className="mt-1 rounded-lg px-3.5 py-2 text-[13px] font-semibold"
       style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
     >
       {children}
-    </button>
+    </SubmitButton>
   );
 }

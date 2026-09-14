@@ -290,7 +290,14 @@ export const campaignEcon = pgTable("campaign_econ", {
   campaignId: uuid("campaign_id")
     .primaryKey()
     .references(() => campaign.id, { onDelete: "cascade" }),
-  agencyFee: integer("agency_fee"), // vårt arvode för kampanjen
+  /**
+   * Fast totalpris. Är den satt fakturerar vi budgeten rakt av: kunden köper
+   * ett resultat, inte ett antal kreatörer, och vad varje kreatör kostar oss
+   * påverkar inte deras summa. Lämnas den tom prissätts uppdragen var för sig
+   * och arvodet läggs ovanpå.
+   */
+  budget: integer("budget"),
+  agencyFee: integer("agency_fee"), // vårt arvode, bara i uppdragsprismodellen
   editingCost: integer("editing_cost"), // vad redigeringen kostar oss
   note: text("note"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

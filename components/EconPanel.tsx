@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui";
 import { saveCampaignEcon, saveBookingEcon } from "@/lib/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 import { campaignPL, kr, pct } from "@/lib/econ";
 
 const field = { borderColor: "var(--line-2)", background: "var(--surface-2)" } as const;
@@ -55,17 +56,34 @@ export async function EconPanel({ campaignId }: { campaignId: string }) {
       </div>
 
       {/* --- Kampanjens egna poster --- */}
-      <form action={saveCampaignEcon} className="mb-4 flex flex-wrap items-end gap-2">
+      <form action={saveCampaignEcon} className="mb-2 flex flex-wrap items-end gap-2">
         <input type="hidden" name="campaignId" value={campaignId} />
-        <Money label="Vårt arvode" name="agencyFee" value={pl.agencyFee || null} hint="läggs på kundens total" />
+        <Money
+          label="Fast budget"
+          name="budget"
+          value={pl.budget}
+          hint="kundens hela pris"
+        />
+        <Money
+          label="Vårt arvode"
+          name="agencyFee"
+          value={pl.agencyFee || null}
+          hint={pl.fixedPrice ? "ingår i budgeten" : "läggs på kundens total"}
+        />
         <Money label="Redigering" name="editingCost" value={pl.editingCost || null} hint="vår kostnad" />
-        <button
+        <SubmitButton
           className="rounded-lg px-3.5 py-2 text-[13px] font-semibold"
           style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
         >
           Spara
-        </button>
+        </SubmitButton>
       </form>
+
+      <p className="mb-4 text-[11.5px]" style={{ color: pl.fixedPrice ? "var(--accent)" : "var(--muted)" }}>
+        {pl.fixedPrice
+          ? `Fast budget: kunden betalar ${kr(pl.budget)} oavsett hur många kreatörer ni sätter. Kundpriserna nedan används inte – fyll bara i vad kreatörerna kostar er.`
+          : "Lämnar du budgeten tom prissätts varje uppdrag för sig och arvodet läggs ovanpå. Fyller du i den köper kunden ett resultat till fast pris."}
+      </p>
 
       {/* --- Rad per uppdrag --- */}
       {pl.lines.length > 0 && (
@@ -79,15 +97,15 @@ export async function EconPanel({ campaignId }: { campaignId: string }) {
             >
               <input type="hidden" name="bookingId" value={l.bookingId} />
               <div className="min-w-[120px] flex-1 pb-2 text-[13px] font-medium">{l.creatorName}</div>
-              <Money label="Kundpris" name="clientPrice" value={l.clientPrice || null} />
+              {!pl.fixedPrice && <Money label="Kundpris" name="clientPrice" value={l.clientPrice || null} />}
               <Money label="Kreatören får" name="creatorFee" value={l.creatorFee || null} />
               <Money label="Utlägg" name="extraCost" value={l.extraCost || null} hint="produkt, frakt" />
-              <button
+              <SubmitButton
                 className="rounded-lg border px-3 py-2 text-[13px] font-semibold"
                 style={{ borderColor: "var(--line-2)" }}
               >
                 Spara
-              </button>
+              </SubmitButton>
             </form>
           ))}
         </div>
@@ -100,7 +118,7 @@ export async function EconPanel({ campaignId }: { campaignId: string }) {
       >
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
-            ["Kunden faktureras", kr(pl.invoiced), undefined],
+            [pl.fixedPrice ? "Budget" : "Kunden faktureras", kr(pl.invoiced), undefined],
             ["Vår kostnad", kr(pl.cost), undefined],
             ["Vinst", kr(pl.profit), pl.profit < 0 ? "var(--crit)" : "var(--good)"],
             ["Marginal", pct(pl.margin), undefined],
@@ -116,10 +134,14 @@ export async function EconPanel({ campaignId }: { campaignId: string }) {
           ))}
         </div>
         <p className="mt-2.5 text-[11.5px]" style={{ color: "var(--ink-2)" }}>
-          Kundens total = uppdragens kundpris + vårt arvode ({kr(pl.agencyFee)}). Det är samma uträkning som kundens
-          portal visar.
+          {pl.fixedPrice
+            ? `Kunden ser ${kr(pl.invoiced)} och inget mer – aldrig antal kreatörer eller vad de kostar.`
+            : `Kundens total = uppdragens kundpris + vårt arvode (${kr(pl.agencyFee)}). Samma uträkning som kundens portal visar.`}
           {pl.unpriced > 0 && (
-            <span style={{ color: "var(--warn)" }}> {pl.unpriced} uppdrag saknar pris och räknas som noll.</span>
+            <span style={{ color: "var(--warn)" }}>
+              {" "}
+              {pl.unpriced} uppdrag saknar {pl.fixedPrice ? "kreatörsarvode" : "pris"} och räknas som noll.
+            </span>
           )}
         </p>
       </div>

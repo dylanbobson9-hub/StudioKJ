@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { requireDb, schema } from "@/lib/db";
 import { getCurrentMember, can } from "@/lib/auth";
 import { stageLabel, type Stage } from "@/lib/stages";
@@ -48,6 +48,21 @@ export async function createCampaign(fd: FormData) {
   const clientId = str(fd, "clientId");
   const name = str(fd, "name");
   if (!clientId || !name) return;
+
+  // Knappen hinner tryckas flera gånger innan sidan byts. Skapade vi precis
+  // en identisk kampanj åt samma kund är det samma klick, inte en ny runda.
+  const [recent] = await db
+    .select({ id: schema.campaign.id })
+    .from(schema.campaign)
+    .where(
+      and(
+        eq(schema.campaign.clientId, clientId),
+        eq(schema.campaign.name, name),
+        gt(schema.campaign.createdAt, new Date(Date.now() - 60_000)),
+      ),
+    )
+    .limit(1);
+  if (recent) redirect(`/campaigns/${recent.id}`);
 
   const rows = await db.select({ refNo: schema.campaign.refNo }).from(schema.campaign);
   const max = rows.reduce((m, r) => {
@@ -453,6 +468,7 @@ export async function saveCampaignEcon(fd: FormData) {
 
   const values = {
     campaignId,
+    budget: amount(fd, "budget"),
     agencyFee: amount(fd, "agencyFee"),
     editingCost: amount(fd, "editingCost"),
     note: str(fd, "note") || null,
