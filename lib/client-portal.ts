@@ -78,12 +78,16 @@ export async function loadPortal(token: string): Promise<Portal | null> {
   const campaign = await resolveClientToken(token);
   if (!campaign) return null;
 
+  // Uppdragen och ekonomin beror bara på kampanjen – hämta dem samtidigt.
   const db = requireDb();
-  const rows = await db
-    .select({ b: schema.booking, creator: schema.creator })
-    .from(schema.booking)
-    .innerJoin(schema.creator, eq(schema.booking.creatorId, schema.creator.id))
-    .where(eq(schema.booking.campaignId, campaign.id));
+  const [rows, pl] = await Promise.all([
+    db
+      .select({ b: schema.booking, creator: schema.creator })
+      .from(schema.booking)
+      .innerJoin(schema.creator, eq(schema.booking.creatorId, schema.creator.id))
+      .where(eq(schema.booking.campaignId, campaign.id)),
+    campaignPL(campaign.id),
+  ]);
 
   const bookings: PortalBooking[] = rows
     // Kandidater är interna tills vi föreslår dem. Utbytta göms helt.
@@ -112,7 +116,7 @@ export async function loadPortal(token: string): Promise<Portal | null> {
     campaign,
     bookings,
     waiting: bookings.filter((b) => b.waiting),
-    pl: await campaignPL(campaign.id),
+    pl,
   };
 }
 
