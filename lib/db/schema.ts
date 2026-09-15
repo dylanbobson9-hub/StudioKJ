@@ -165,6 +165,17 @@ export const creator = pgTable("creator", {
   address: text("address"),
   shirtSize: text("shirt_size"),
   // Fakturering & bolag — collected before booking (routine "utlandsfakturor")
+  /**
+   * Hur kreatören tar betalt. Styr vad som krävs innan utbetalning:
+   * "company" behöver orgnr, "private" behöver personnummer.
+   */
+  payoutType: text("payout_type").$type<"company" | "private">(),
+  /**
+   * Personnumret, krypterat med PII_KEY (se lib/pii.ts). Läses aldrig i klartext
+   * ur databasen, visas bara för Admin och Ekonomi, och lämnar aldrig appen –
+   * inte i export, inte i kundportalen.
+   */
+  personalNumberEnc: text("personal_number_enc"),
   companyName: text("company_name"),
   regNumber: text("reg_number"),
   bankAccount: text("bank_account"),

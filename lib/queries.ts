@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, lte, ne, or } from "drizzle-orm";
 import { requireDb, schema } from "@/lib/db";
+import { missingFor } from "@/lib/readiness";
 
 /** Ett uppdrag med kampanj, kund och kreatör påhängda. */
 export type BookingRow = Awaited<ReturnType<typeof listBookings>>[number];
@@ -16,6 +17,15 @@ export async function listBookings(opts: { campaignId?: string } = {}) {
         platform: schema.creator.platform,
         email: schema.creator.email,
         preferred: schema.creator.preferred,
+        // Bara för att räkna ut vad som saknas – lämnar aldrig den här funktionen.
+        phone: schema.creator.phone,
+        address: schema.creator.address,
+        city: schema.creator.city,
+        payoutType: schema.creator.payoutType,
+        bankAccount: schema.creator.bankAccount,
+        regNumber: schema.creator.regNumber,
+        companyName: schema.creator.companyName,
+        personalNumberEnc: schema.creator.personalNumberEnc,
       },
       campaign: { id: schema.campaign.id, name: schema.campaign.name, refNo: schema.campaign.refNo },
       client: { id: schema.client.id, name: schema.client.name },
@@ -26,7 +36,12 @@ export async function listBookings(opts: { campaignId?: string } = {}) {
     .innerJoin(schema.client, eq(schema.campaign.clientId, schema.client.id))
     .where(opts.campaignId ? eq(schema.booking.campaignId, opts.campaignId) : undefined)
     .orderBy(desc(schema.booking.updatedAt));
-  return rows.map((r) => ({ ...r.b, creator: r.creator, campaign: r.campaign, client: r.client }));
+  return rows.map((r) => {
+    const { phone, address, city, payoutType, bankAccount, regNumber, companyName, personalNumberEnc, ...creator } =
+      r.creator;
+    const missing = missingFor({ phone, address, city, payoutType, bankAccount, regNumber, companyName, personalNumberEnc, email: creator.email });
+    return { ...r.b, creator, missing, campaign: r.campaign, client: r.client };
+  });
 }
 
 export async function getBooking(id: string) {

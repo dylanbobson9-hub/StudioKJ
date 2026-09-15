@@ -6,6 +6,8 @@ import { getCurrentMember, can } from "@/lib/auth";
 import { getCreator, listCampaigns, listBookings } from "@/lib/queries";
 import { attachCreator, markCreatorReviewed } from "@/lib/actions";
 import { stageLabel } from "@/lib/stages";
+import { missingFor } from "@/lib/readiness";
+import { CreatorEdit } from "@/components/CreatorEdit";
 
 const field = { borderColor: "var(--line-2)", background: "var(--surface-2)" } as const;
 
@@ -23,7 +25,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-export default async function CreatorPage({ params }: PageProps<"/creators/[id]">) {
+export default async function CreatorPage({ params, searchParams }: PageProps<"/creators/[id]">) {
   const me = await getCurrentMember();
   if (!can.operate(me)) redirect("/");
 
@@ -34,6 +36,14 @@ export default async function CreatorPage({ params }: PageProps<"/creators/[id]"
   const [campaigns, bookings] = await Promise.all([listCampaigns(), listBookings()]);
   const mine = bookings.filter((b) => b.creator.id === c.id);
   const busyOn = new Set(mine.map((b) => b.campaign.id));
+
+  const sp = await searchParams;
+  const saved = sp.sparat === "1";
+  const error = sp.fel === "personnummer";
+  const missing = missingFor(c);
+  // Luckor spelar bara roll när kreatören faktiskt ska jobba. I katalogen har
+  // nästan alla dem, så formuläret öppnas bara av sig självt för bokade.
+  const booked = mine.length > 0;
 
   return (
     <>
@@ -65,8 +75,51 @@ export default async function CreatorPage({ params }: PageProps<"/creators/[id]"
         </form>
       )}
 
+      {saved && (
+        <p
+          className="mb-4 rounded-lg border px-3.5 py-2.5 text-[13px]"
+          style={{ borderColor: "var(--good)", background: "var(--good-soft)", color: "var(--good)" }}
+        >
+          Uppgifterna är sparade.
+        </p>
+      )}
+      {error && (
+        <p
+          className="mb-4 rounded-lg border px-3.5 py-2.5 text-[13px]"
+          style={{ borderColor: "var(--crit)", background: "var(--crit-soft)", color: "var(--crit)" }}
+        >
+          Personnumret stämmer inte – kontrollsiffran går inte ihop. Inget sparades, kolla att det är rätt skrivet.
+        </p>
+      )}
+
+      {booked && missing.length > 0 && (
+        <div
+          className="mb-4 rounded-lg border px-3.5 py-2.5"
+          style={{ borderColor: "var(--warn)", background: "var(--warn-soft)" }}
+        >
+          <div className="text-[13px] font-semibold" style={{ color: "var(--warn)" }}>
+            Saknas innan uppdraget kan gå hela vägen
+          </div>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[12.5px]" style={{ color: "var(--warn)" }}>
+            {(["frakt", "kontakt", "utbetalning"] as const).map((g) => {
+              const items = missing.filter((m) => m.group === g);
+              if (!items.length) return null;
+              return (
+                <span key={g}>
+                  <b className="capitalize">{g}:</b> {items.map((m) => m.label).join(", ")}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-[1fr_300px]">
         <div>
+          <Card className="mb-4">
+            <CreatorEdit c={c} missing={missing} canEcon={can.econ(me)} open={error || (booked && missing.length > 0)} />
+          </Card>
+
           <Card>
             {c.pitch && (
               <p
@@ -188,7 +241,7 @@ export default async function CreatorPage({ params }: PageProps<"/creators/[id]"
                 </span>
               )}
             </Row>
-            <Row label="Adress">{c.address}</Row>
+            <Row label="Adress">{[c.address, c.city].filter(Boolean).join(", ") || null}</Row>
             <p className="mt-3 text-[11.5px]" style={{ color: "var(--muted)" }}>
               Kontaktuppgifterna är interna. De syns aldrig i kundens vy.
             </p>

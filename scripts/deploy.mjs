@@ -77,7 +77,7 @@ env.set("APP_URL", PROD_URL);
  * formulärens skript – en ny nyckel vid varje deploy hade tystat dem.
  */
 const generated = [];
-for (const key of ["CRON_SECRET", "INTAKE_SECRET"]) {
+for (const key of ["CRON_SECRET", "INTAKE_SECRET", "PII_KEY"]) {
   if (!env.get(key)) {
     env.set(key, randomBytes(32).toString("base64url"));
     generated.push(key);

@@ -11,6 +11,7 @@ import { newToken, clientLink, creatorLink, APP_URL } from "@/lib/tokens";
 import { sendEmail, emailShell } from "@/lib/email";
 import { notify, STAGE_EVENT } from "@/lib/notify";
 import { listAccessTokens } from "@/lib/queries";
+import { encryptPII, normalizePersonalNumber, isValidPersonalNumber } from "@/lib/pii";
 
 async function requireStaff() {
   const m = await getCurrentMember();
@@ -428,6 +429,61 @@ export async function revokeLink(fd: FormData) {
     .set({ revoked: true })
     .where(eq(schema.accessToken.token, token));
   revalidatePath(str(fd, "back") || "/campaigns");
+}
+
+/**
+ * Rättar en kreatörs uppgifter. Två behörighetsnivåer i samma formulär:
+ * kontakt, adress och profil kan hela crew rätta; allt som rör utbetalning
+ * – personnummer, bank, bolag – bara Admin och Ekonomi. Fälten för
+ * utbetalning ignoreras tyst för övriga, även om någon skickar dem ändå.
+ */
+export async function updateCreator(fd: FormData) {
+  const m = await requireStaff();
+  const db = requireDb();
+  const id = str(fd, "creatorId");
+  if (!id) return;
+
+  const opt = (k: string) => (fd.has(k) ? str(fd, k) || null : undefined);
+  const set: Partial<typeof schema.creator.$inferInsert> = {};
+  for (const k of ["name", "email", "phone", "address", "city", "country", "shirtSize", "platform", "niche", "languages", "socialUrl", "portfolioUrl"] as const) {
+    const v = opt(k);
+    if (v !== undefined) (set as Record<string, unknown>)[k] = k === "email" ? v?.toLowerCase() ?? null : v;
+  }
+  if (set.name === null) delete set.name; // namnet får aldrig tömmas
+
+  const back = str(fd, "back") || `/creators/${id}`;
+
+  if (can.econ(m)) {
+    const payout = str(fd, "payoutType");
+    if (fd.has("payoutType")) set.payoutType = payout === "company" || payout === "private" ? payout : null;
+    for (const k of ["companyName", "regNumber", "bankAccount"] as const) {
+      const v = opt(k);
+      if (v !== undefined) set[k] = v;
+    }
+
+    // Tomt fält = behåll det som finns. Bara bocken tar bort, så ett
+    // personnummer aldrig försvinner för att någon sparade utan att röra det.
+    if (fd.get("clearPersonalNumber") === "1") {
+      set.personalNumberEnc = null;
+    } else {
+      const raw = str(fd, "personalNumber");
+      if (raw) {
+        const normalized = normalizePersonalNumber(raw);
+        if (!normalized || !isValidPersonalNumber(normalized)) {
+          redirect(`${back}?fel=personnummer` as never);
+        }
+        set.personalNumberEnc = encryptPII(normalized!);
+      }
+    }
+  }
+
+  if (Object.keys(set).length) {
+    await db.update(schema.creator).set(set).where(eq(schema.creator.id, id));
+  }
+
+  revalidatePath(`/creators/${id}`);
+  revalidatePath("/creators");
+  redirect(`${back}?sparat=1` as never);
 }
 
 /** Kvitterar en ny ansökan så den försvinner ur "att granska". */

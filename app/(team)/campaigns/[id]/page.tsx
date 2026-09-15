@@ -5,6 +5,7 @@ import { StagePill, SlaPill, HoldPill, Progress } from "@/components/pills";
 import { ConfirmSubmit, TrashIcon } from "@/components/ConfirmSubmit";
 import { CopyLink } from "@/components/LinkPanel";
 import { EconPanel } from "@/components/EconPanel";
+import { missingLabel } from "@/lib/readiness";
 import { getCampaign, listBookings, listAccessTokens } from "@/lib/queries";
 import { getCurrentMember, can } from "@/lib/auth";
 import { createBooking, deleteCampaign, issueClientLink, revokeLink } from "@/lib/actions";
@@ -91,9 +92,22 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
                   {b.creator.name}
                 </div>
                 <div className="truncate text-[12px]" style={{ color: "var(--muted)" }}>
-                  {b.creator.platform ?? "—"}
+                  {b.missing.length > 0 ? (
+                    <span style={{ color: "var(--warn)" }}>Saknas: {missingLabel(b.missing)}</span>
+                  ) : (
+                    (b.creator.platform ?? "Uppgifterna kompletta")
+                  )}
                 </div>
               </div>
+              {b.missing.length > 0 && (
+                <span
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  style={{ background: "var(--warn-soft)", color: "var(--warn)" }}
+                  title={`Saknas: ${b.missing.map((m) => m.label).join(", ")}`}
+                >
+                  {b.missing.length} saknas
+                </span>
+              )}
               <SlaPill booking={b} />
               <StagePill stage={b.stage} />
               <Progress pct={progressPct(b.stage)} />
