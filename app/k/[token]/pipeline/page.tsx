@@ -65,6 +65,11 @@ export default async function PortalPipeline({ params }: PageProps<"/k/[token]/p
                         <div className="mt-0.5 text-[11px]" style={{ color: "var(--muted)" }}>
                           {STAGE_META[b.stage].label}
                         </div>
+                        {b.addressMissing && (
+                          <div className="mt-1 text-[11px] font-semibold" style={{ color: "var(--warn)" }}>
+                            Adress saknas
+                          </div>
+                        )}
                         {b.waiting && (
                           <div className="mt-1 text-[11px] font-semibold" style={{ color: "var(--warn)" }}>
                             Väntar på er

@@ -30,10 +30,12 @@ export function missingFor(
   } else if (c.payoutType === "company") {
     if (!c.companyName) out.push({ key: "companyName", label: "bolagsnamn", group: "utbetalning" });
     if (!c.regNumber) out.push({ key: "regNumber", label: "orgnr", group: "utbetalning" });
-  } else if (!c.personalNumberEnc) {
-    out.push({ key: "personalNumber", label: "personnummer", group: "utbetalning" });
+  } else {
+    if (!c.personalNumberEnc) out.push({ key: "personalNumber", label: "personnummer", group: "utbetalning" });
+    // Ett bolag fakturerar oss med sina egna betaluppgifter. Bara en
+    // privatperson betalar vi ut till, så bara där behövs kontot.
+    if (!c.bankAccount) out.push({ key: "bankAccount", label: "bankkonto", group: "utbetalning" });
   }
-  if (!c.bankAccount) out.push({ key: "bankAccount", label: "bankkonto", group: "utbetalning" });
 
   return out;
 }

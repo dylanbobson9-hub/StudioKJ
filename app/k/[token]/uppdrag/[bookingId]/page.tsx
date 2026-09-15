@@ -217,9 +217,17 @@ ${b.shipTo.address}`}
               </p>
             </div>
           ) : (
-            <p className="mb-3 text-[12.5px]" style={{ color: "var(--muted)" }}>
-              Vi återkommer med leveransadressen så fort kreatören bekräftat.
-            </p>
+            <div
+              className="mb-3 rounded-lg border px-3 py-2.5"
+              style={{ borderColor: "var(--warn)", background: "var(--warn-soft)" }}
+            >
+              <div className="text-[13px] font-semibold" style={{ color: "var(--warn)" }}>
+                Leveransadress saknas
+              </div>
+              <div className="mt-0.5 text-[12.5px]" style={{ color: "var(--warn)" }}>
+                Vänta med att skicka – vi kompletterar adressen och den dyker upp här.
+              </div>
+            </div>
           )}
 
           <form action={clientSetTracking} className="flex flex-wrap items-end gap-2">

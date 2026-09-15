@@ -121,6 +121,14 @@ export default async function PortalOverview({ params }: PageProps<"/k/[token]">
                   </div>
                 </div>
                 <StageLine stage={b.stage} />
+                {b.addressMissing && (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    style={{ background: "var(--warn-soft)", color: "var(--warn)" }}
+                  >
+                    Adress saknas
+                  </span>
+                )}
                 <div className="w-full sm:w-[110px]">
                   <Bar stage={b.stage} />
                 </div>

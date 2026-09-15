@@ -140,6 +140,24 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[id]"
         </Card>
       )}
 
+      {b.missing.length > 0 && (
+        <div
+          className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border px-3.5 py-2.5"
+          style={{ borderColor: "var(--warn)", background: "var(--warn-soft)" }}
+        >
+          <div className="min-w-0 flex-1 text-[13px]" style={{ color: "var(--warn)" }}>
+            <b>Saknas för {b.creator.name}:</b> {b.missing.map((m) => m.label).join(", ")}
+          </div>
+          <Link
+            href={`/creators/${b.creator.id}`}
+            className="shrink-0 rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold"
+            style={{ borderColor: "var(--warn)", color: "var(--warn)" }}
+          >
+            Fyll i →
+          </Link>
+        </div>
+      )}
+
       {/* ---- Flytta i flödet ---- */}
       <Card className="mb-5">
         <div className="mb-2.5 text-[11px] font-semibold tracking-[0.11em] uppercase" style={{ color: "var(--muted)" }}>

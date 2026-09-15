@@ -62,6 +62,15 @@ export default async function PipelinePage() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         {b.holdActive ? <HoldPill reason={b.holdReason} note={b.holdNote} /> : <StagePill stage={b.stage} />}
                         <SlaPill booking={b} />
+                        {b.missing.length > 0 && (
+                          <span
+                            className="rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold"
+                            style={{ background: "var(--warn-soft)", color: "var(--warn)" }}
+                            title={`Saknas: ${b.missing.map((m) => m.label).join(", ")}`}
+                          >
+                            {b.missing.length} saknas
+                          </span>
+                        )}
                         <span className="ml-auto text-[11px]" style={{ color: "var(--muted)" }}>
                           {ago(b.updatedAt)}
                         </span>

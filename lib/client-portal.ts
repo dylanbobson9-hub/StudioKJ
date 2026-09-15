@@ -54,6 +54,12 @@ export type PortalBooking = {
   publishedUrl: string | null;
   productName: string | null;
   shipTo: ShipTo | null;
+  /**
+   * Leveransadressen saknas och kunden är i fraktsteget – de kan inte skicka.
+   * Det enda "saknas" kunden någonsin ser: personnummer, bank och bolag är
+   * våra luckor att täppa, inte deras att känna till.
+   */
+  addressMissing: boolean;
   deliverableType: string;
   deliverableQty: number;
   updatedAt: Date;
@@ -131,6 +137,8 @@ export async function loadPortal(token: string): Promise<Portal | null> {
       publishedUrl: r.b.publishedUrl,
       productName: r.b.productName,
       shipTo: shipTo(r.b, r.creator),
+      addressMissing:
+        (r.b.stage === "confirmed" || r.b.stage === "product_sent") && !r.b.productAddress && !r.creator.address,
       deliverableType: r.b.deliverableType,
       deliverableQty: r.b.deliverableQty,
       updatedAt: r.b.updatedAt,
