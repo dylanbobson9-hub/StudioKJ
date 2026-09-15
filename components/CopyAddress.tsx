@@ -20,7 +20,7 @@ export function CopyAddress({ text, className = "" }: { text: string; className?
         }
       }}
     >
-      {done ? "Kopierad ✓" : "Kopiera adress"}
+      {done ? "Kopierad ✓" : "Kopiera mottagare"}
     </button>
   );
 }

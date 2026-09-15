@@ -195,6 +195,26 @@ export default async function PortalBooking({ params }: PageProps<"/k/[token]/up
               <div className="text-[13px] whitespace-pre-line" style={{ color: "var(--ink-2)" }}>
                 {b.shipTo.address}
               </div>
+              {(b.shipTo.phone || b.shipTo.email) ? (
+                <div className="mt-1.5 text-[13px]" style={{ color: "var(--ink-2)" }}>
+                  {b.shipTo.phone && (
+                    <div>
+                      <span style={{ color: "var(--muted)" }}>Telefon: </span>
+                      {b.shipTo.phone}
+                    </div>
+                  )}
+                  {b.shipTo.email && (
+                    <div>
+                      <span style={{ color: "var(--muted)" }}>Mejl: </span>
+                      {b.shipTo.email}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-1.5 text-[12.5px] font-semibold" style={{ color: "var(--warn)" }}>
+                  Telefon och mejl saknas – vi kompletterar.
+                </div>
+              )}
               {b.shipTo.shirtSize && (
                 <div className="mt-1 text-[12.5px]" style={{ color: "var(--ink-2)" }}>
                   <span style={{ color: "var(--muted)" }}>Storlek: </span>
@@ -208,8 +228,7 @@ export default async function PortalBooking({ params }: PageProps<"/k/[token]/up
                 </div>
               )}
               <CopyAddress
-                text={`${b.shipTo.name}
-${b.shipTo.address}`}
+                text={[b.shipTo.name, b.shipTo.address, b.shipTo.phone, b.shipTo.email].filter(Boolean).join(String.fromCharCode(10))}
                 className="mt-2 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium"
               />
               <p className="mt-2 text-[11px]" style={{ color: "var(--muted)" }}>

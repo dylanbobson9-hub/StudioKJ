@@ -37,6 +37,9 @@ export type PublicCreator = {
 export type ShipTo = {
   name: string;
   address: string;
+  /** Fraktbolagen (PostNord m.fl.) kräver telefon och/eller mejl för aviseringen. */
+  phone: string | null;
+  email: string | null;
   shirtSize: string | null;
 };
 
@@ -85,7 +88,7 @@ function shipTo(
   if (b.stage !== "confirmed" && b.stage !== "product_sent") return null;
   const address = b.productAddress || c.address;
   if (!address) return null;
-  return { name: c.name, address, shirtSize: c.shirtSize };
+  return { name: c.name, address, phone: c.phone, email: c.email, shirtSize: c.shirtSize };
 }
 
 function publicCreator(c: typeof schema.creator.$inferSelect): PublicCreator {
