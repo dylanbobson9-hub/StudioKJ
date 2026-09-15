@@ -25,12 +25,12 @@ export function missingFor(
   if (!c.email) out.push({ key: "email", label: "mejl", group: "kontakt" });
   if (!c.phone) out.push({ key: "phone", label: "telefon", group: "kontakt" });
 
-  if (!c.payoutType) {
-    out.push({ key: "payoutType", label: "bolag eller privatperson", group: "utbetalning" });
-  } else if (c.payoutType === "company") {
+  // Okänd betalform flaggas inte – den tas när det blir aktuellt. Är den
+  // vald följer kraven med: bolag behöver orgnr, privatperson personnummer.
+  if (c.payoutType === "company") {
     if (!c.companyName) out.push({ key: "companyName", label: "bolagsnamn", group: "utbetalning" });
     if (!c.regNumber) out.push({ key: "regNumber", label: "orgnr", group: "utbetalning" });
-  } else {
+  } else if (c.payoutType === "private") {
     if (!c.personalNumberEnc) out.push({ key: "personalNumber", label: "personnummer", group: "utbetalning" });
     // Ett bolag fakturerar oss med sina egna betaluppgifter. Bara en
     // privatperson betalar vi ut till, så bara där behövs kontot.
