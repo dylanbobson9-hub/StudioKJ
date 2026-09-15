@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHead, Card, EmptyState } from "@/components/ui";
 import { Pill } from "@/components/pills";
 import { getCurrentMember, can } from "@/lib/auth";
-import { listCampaigns } from "@/lib/queries";
+import { listCampaigns, listInvoices } from "@/lib/queries";
 import { campaignPLs, kr, pct } from "@/lib/econ";
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
@@ -23,7 +23,7 @@ export default async function EconomyPage() {
   const member = await getCurrentMember();
   if (!can.econ(member)) redirect("/");
 
-  const campaigns = await listCampaigns();
+  const [campaigns, queue] = await Promise.all([listCampaigns(), listInvoices({ status: "requested" })]);
   const pls = await campaignPLs(campaigns.map((c) => c.id));
 
   const totals = campaigns.reduce(
@@ -44,6 +44,59 @@ export default async function EconomyPage() {
   return (
     <>
       <PageHead title="Ekonomi" sub="Alla belopp exklusive moms. Bara Admin och Ekonomi ser den här sidan." />
+
+      {/* --- Att fakturera: det som idag är "@Kevin Fakturera …" i Asana --- */}
+      {queue.length > 0 && (
+        <div className="mb-5">
+          <h2 className="mb-2 text-[13.5px] font-semibold">
+            Att fakturera{" "}
+            <span className="font-normal" style={{ color: "var(--muted)" }}>
+              · {queue.length} st, {kr(queue.reduce((s, i) => s + i.amount, 0))}
+            </span>
+          </h2>
+          <div
+            className="overflow-hidden rounded-[13px] border"
+            style={{ borderColor: "var(--warn)", background: "var(--surface)" }}
+          >
+            {queue
+              .slice()
+              .sort((a, b) => a.requestedAt.getTime() - b.requestedAt.getTime())
+              .map((i) => {
+                const days = Math.floor((Date.now() - i.requestedAt.getTime()) / 86_400_000);
+                return (
+                  <Link
+                    key={i.id}
+                    href={`/campaigns/${i.campaign.id}#fakturering`}
+                    className="flex flex-wrap items-center gap-3 border-b px-4 py-3 last:border-b-0"
+                    style={{ borderColor: "var(--line)" }}
+                  >
+                    <div className="min-w-[160px] flex-1">
+                      <div className="text-[13.5px] font-semibold">
+                        {i.client.name}{" "}
+                        <span className="font-normal" style={{ color: "var(--ink-2)" }}>
+                          {i.description ?? i.campaign.name}
+                        </span>
+                      </div>
+                      <div className="text-[11.5px]" style={{ color: "var(--muted)" }}>
+                        Begärd av {i.requestedByName}
+                        {!i.client.billingName && !i.client.orgNo && (
+                          <span style={{ color: "var(--warn)" }}> · fakturauppgifter saknas</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[14px] font-semibold">{kr(i.amount)}</span>
+                    <span
+                      className="w-[72px] shrink-0 text-right text-[12px] font-semibold"
+                      style={{ color: days >= 2 ? "var(--crit)" : days >= 1 ? "var(--warn)" : "var(--muted)" }}
+                    >
+                      {days === 0 ? "idag" : days === 1 ? "1 dag" : `${days} dagar`}
+                    </span>
+                  </Link>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {campaigns.length === 0 ? (
         <EmptyState title="Inga kampanjer ännu" hint="Lägg upp en kampanj så dyker ekonomin upp här." />

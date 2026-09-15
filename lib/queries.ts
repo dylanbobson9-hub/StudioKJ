@@ -209,6 +209,23 @@ export async function getCreator(id: string) {
   return row ?? null;
 }
 
+/** Fakturor för en kampanj, eller hela kön om ingen kampanj anges. */
+export async function listInvoices(opts: { campaignId?: string; status?: "requested" | "sent" } = {}) {
+  const db = requireDb();
+  const where = and(
+    opts.campaignId ? eq(schema.invoice.campaignId, opts.campaignId) : undefined,
+    opts.status ? eq(schema.invoice.status, opts.status) : undefined,
+  );
+  const rows = await db
+    .select({ i: schema.invoice, campaign: { id: schema.campaign.id, name: schema.campaign.name, refNo: schema.campaign.refNo }, client: schema.client })
+    .from(schema.invoice)
+    .innerJoin(schema.campaign, eq(schema.invoice.campaignId, schema.campaign.id))
+    .innerJoin(schema.client, eq(schema.campaign.clientId, schema.client.id))
+    .where(where)
+    .orderBy(desc(schema.invoice.requestedAt));
+  return rows.map((r) => ({ ...r.i, campaign: r.campaign, client: r.client }));
+}
+
 /** Vem som dragit ut kreatörslistan, senast först. */
 export async function listExports(limit = 25) {
   return requireDb().select().from(schema.exportLog).orderBy(desc(schema.exportLog.at)).limit(limit);

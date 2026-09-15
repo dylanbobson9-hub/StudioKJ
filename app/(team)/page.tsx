@@ -2,8 +2,8 @@ import Link from "next/link";
 import { after } from "next/server";
 import { PageHead, Card, EmptyState } from "@/components/ui";
 import { StagePill, SlaPill, HoldPill, Progress } from "@/components/pills";
-import { listBookings, listCampaigns } from "@/lib/queries";
-import { getCurrentMember } from "@/lib/auth";
+import { listBookings, listCampaigns, listInvoices } from "@/lib/queries";
+import { getCurrentMember, can } from "@/lib/auth";
 import { markReminded } from "@/lib/actions";
 import { STAGE_META, fmtDur, progressPct, slaFor, slaRank, ago } from "@/lib/stages";
 import { maybeRunSlaJob } from "@/lib/sla-job";
@@ -12,7 +12,11 @@ export default async function OverviewPage() {
   const member = await getCurrentMember();
   // Efter att sidan skickats: kolla tidsplanen och mejla det som brinner.
   if (member) after(maybeRunSlaJob);
-  const [bookings, campaigns] = await Promise.all([listBookings(), listCampaigns()]);
+  const [bookings, campaigns, toInvoice] = await Promise.all([
+    listBookings(),
+    listCampaigns(),
+    listInvoices({ status: "requested" }),
+  ]);
   const firstName = (member?.name ?? "").split(/\s+/)[0] || "där";
 
   const live = bookings.filter((b) => b.stage !== "done");
@@ -42,6 +46,37 @@ export default async function OverviewPage() {
         title={`Hej ${firstName}`}
         sub="Hela produktionsflödet – vad som rör sig och vad som står stilla."
       />
+
+      {toInvoice.length > 0 && (can.econ(member) || toInvoice.some((i) => i.requestedById === member?.id)) && (
+        <Link
+          href={can.econ(member) ? "/economy" : `/campaigns/${toInvoice.find((i) => i.requestedById === member?.id)!.campaign.id}#fakturering`}
+          className="mb-5 flex flex-wrap items-center gap-3 rounded-[13px] border px-4 py-3"
+          style={{ borderColor: "var(--warn)", background: "var(--warn-soft)" }}
+        >
+          <div className="min-w-0 flex-1 text-[13.5px]" style={{ color: "var(--warn)" }}>
+            {can.econ(member) ? (
+              <>
+                <b>
+                  {toInvoice.length} faktur{toInvoice.length === 1 ? "a" : "or"} att skicka
+                </b>{" "}
+                – {toInvoice.reduce((s, i) => s + i.amount, 0).toLocaleString("sv-SE")} kr ex moms.
+                {(() => {
+                  const oldest = Math.max(...toInvoice.map((i) => Date.now() - i.requestedAt.getTime()));
+                  const d = Math.floor(oldest / 86_400_000);
+                  return d >= 1 ? ` Äldsta har väntat ${d} ${d === 1 ? "dag" : "dagar"}.` : "";
+                })()}
+              </>
+            ) : (
+              <>
+                <b>Dina fakturabegäranden</b> väntar fortfarande på att skickas.
+              </>
+            )}
+          </div>
+          <span className="text-[13px] font-semibold" style={{ color: "var(--warn)" }}>
+            Öppna →
+          </span>
+        </Link>
+      )}
 
       {hot.length > 0 && (
         <div

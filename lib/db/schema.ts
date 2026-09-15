@@ -106,7 +106,10 @@ export const session = pgTable("session", {
 export const client = pgTable("client", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  /** Bolaget som faktureras – ofta inte samma som varumärket ("Zonk E-handel AB" för Glaze). */
+  billingName: text("billing_name"),
   orgNo: text("org_no"),
+  billingAddress: text("billing_address"),
   invoiceEmail: text("invoice_email"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -328,6 +331,39 @@ export const bookingEcon = pgTable("booking_econ", {
 });
 
 /* ------------------------------------------------------------------ */
+/*  Fakturering                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * En faktureringsbegäran. Ersätter "@Kevin Fakturera 15250 kr ex.moms" och
+ * svaret "FAKTURA SKICKAD" i Asana.
+ *
+ * En kampanj får ofta flera: grundleveransen och sedan tillägg som raw-
+ * material eller en extra video. Därför är det här en egen rad per faktura,
+ * inte ett fält på kampanjen.
+ */
+export const invoice = pgTable(
+  "invoice",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaign.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(), // hela kronor ex moms
+    description: text("description"), // "3 kreatörer, 1 video var"
+    status: text("status").$type<"requested" | "sent">().notNull().default("requested"),
+    requestedById: uuid("requested_by_id").references(() => teamMember.id, { onDelete: "set null" }),
+    requestedByName: text("requested_by_name").notNull(),
+    requestedAt: timestamp("requested_at", { withTimezone: true }).defaultNow().notNull(),
+    sentById: uuid("sent_by_id").references(() => teamMember.id, { onDelete: "set null" }),
+    sentByName: text("sent_by_name"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    invoiceNumber: text("invoice_number"),
+  },
+  (t) => [index("invoice_campaign_idx").on(t.campaignId), index("invoice_status_idx").on(t.status)],
+);
+
+/* ------------------------------------------------------------------ */
 /*  Uttag av kreatörsdata                                               */
 /* ------------------------------------------------------------------ */
 
@@ -384,5 +420,6 @@ export type Booking = typeof booking.$inferSelect;
 export type BookingEvent = typeof bookingEvent.$inferSelect;
 export type AccessToken = typeof accessToken.$inferSelect;
 export type ExportLog = typeof exportLog.$inferSelect;
+export type Invoice = typeof invoice.$inferSelect;
 export type CampaignEcon = typeof campaignEcon.$inferSelect;
 export type BookingEcon = typeof bookingEcon.$inferSelect;

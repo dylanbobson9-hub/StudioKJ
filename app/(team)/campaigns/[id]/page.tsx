@@ -5,6 +5,7 @@ import { StagePill, SlaPill, HoldPill, Progress } from "@/components/pills";
 import { ConfirmSubmit, TrashIcon } from "@/components/ConfirmSubmit";
 import { CopyLink } from "@/components/LinkPanel";
 import { EconPanel } from "@/components/EconPanel";
+import { InvoicePanel } from "@/components/InvoicePanel";
 import { missingLabel } from "@/lib/readiness";
 import { getCampaign, listBookings, listAccessTokens } from "@/lib/queries";
 import { getCurrentMember, can } from "@/lib/auth";
@@ -248,6 +249,10 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
           </Card>
         </details>
       </div>
+
+      {me && can.operate(me) && (
+        <InvoicePanel campaignId={camp.id} client={camp.client} me={me} canEcon={can.econ(me)} />
+      )}
 
       {can.econ(me) && <EconPanel campaignId={camp.id} />}
     </>
