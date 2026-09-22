@@ -94,7 +94,8 @@ async function moveStage(bookingId: string, stage: Stage, extra: Record<string, 
 }
 
 function refresh(token: string, kind: "k" | "u") {
-  revalidatePath(`/${kind}/${token}`);
+  // "layout" tar med undersidorna – annars står uppdragssidan kvar med gamla knappar.
+  revalidatePath(`/${kind}/${token}`, "layout");
   revalidatePath("/");
   revalidatePath("/pipeline");
 }
@@ -161,11 +162,11 @@ export async function clientDecideContent(fd: FormData) {
     await logEvent(b.id, "Kund", "godkände materialet");
     await notify(b.id, { kind: "content_approved" });
   } else {
-    await requireDb()
-      .update(schema.booking)
-      .set({ contentApproval: "changes", approvalComment: comment || null, updatedAt: new Date() })
-      .where(eq(schema.booking.id, b.id));
-    await logEvent(b.id, "Kund", `begärde ändring på materialet${comment ? `: ${comment}` : ""}`);
+    // En revidering utan text går inte att göra något med.
+    if (!comment) return;
+    // Tillbaka till redigering: bollen ligger hos oss tills nästa version.
+    await moveStage(b.id, "editing", { contentApproval: "changes", approvalComment: comment });
+    await logEvent(b.id, "Kund", `begärde revidering: ${comment}`);
     await notify(b.id, { kind: "changes_requested", what: "content", comment });
   }
   refresh(token, "k");

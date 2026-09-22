@@ -173,7 +173,7 @@ async function briefReady(c: Ctx) {
 }
 
 /** Kreatören har lämnat in material. */
-async function contentReady(c: Ctx) {
+async function contentReady(c: Ctx, byTeam = false) {
   const t = await clientTarget(c.campaign.id);
   await attempt(
     c.b.id,
@@ -182,11 +182,12 @@ async function contentReady(c: Ctx) {
       to: t.to,
       subject: `${c.campaign.name}: materialet är redo för er`,
       body:
-        `<p><b>${esc(c.creator.name)}</b> har lämnat in materialet. Titta igenom och godkänn,
-          eller skriv vad som ska justeras.</p>` +
-        button(t.href, "Se materialet"),
+        `<p>Materialet från <b>${esc(c.creator.name)}</b> är klart att granska.</p>
+         <p>Godkänn, eller begär revidering – och skriv då <b>allt</b> ni vill ändra på en gång, så gör vi alla ändringar i samma runda.</p>` +
+        button(t.href, "Granska materialet"),
     },
   );
+  if (byTeam) return; // teamet skickade själva – ingen idé att mejla dem om det
   await attemptCrew(
     c.b.id,
     `Material inlämnat – ${c.creator.name} · ${c.campaign.name}`,
@@ -288,7 +289,7 @@ async function creatorRejected(c: Ctx, comment?: string | null) {
 type Event =
   | { kind: "creators_proposed" }
   | { kind: "brief_ready" }
-  | { kind: "content_ready" }
+  | { kind: "content_ready"; byTeam?: boolean }
   | { kind: "brief_approved" }
   | { kind: "content_approved" }
   | { kind: "changes_requested"; what: "brief" | "content"; comment?: string | null }
@@ -309,7 +310,7 @@ export async function notify(bookingId: string, e: Event) {
       case "brief_ready":
         return await briefReady(c);
       case "content_ready":
-        return await contentReady(c);
+        return await contentReady(c, e.byTeam);
       case "brief_approved":
         return await briefApproved(c);
       case "content_approved":

@@ -486,6 +486,49 @@ export async function updateCreator(fd: FormData) {
   redirect(`${back}?sparat=1` as never);
 }
 
+/**
+ * Lämnar materialet till kunden för granskning. Kreatörerna laddar upp i
+ * KJ:s Drive, så det är teamet – inte kreatören – som skickar vidare. Går
+ * från vilket steg som helst: ingen ska behöva klicka sig fram genom
+ * mellanstegen för att få ut en video till kunden.
+ */
+export async function submitContentToClient(fd: FormData) {
+  const m = await requireStaff();
+  const id = str(fd, "bookingId");
+  const links = str(fd, "links")
+    .split(/[\s,]+/)
+    .map((l) => l.trim())
+    .filter((l) => /^https?:\/\//i.test(l));
+  if (!id || !links.length) return;
+
+  const db = requireDb();
+  const [cur] = await db.select().from(schema.booking).where(eq(schema.booking.id, id)).limit(1);
+  if (!cur) return;
+  const round = cur.contentApproval === "changes" ? "ny version" : "material";
+
+  await db
+    .update(schema.booking)
+    .set({
+      stage: "content_review",
+      stageSince: new Date(),
+      reminderSentAt: null,
+      contentLinks: links,
+      contentNote: str(fd, "note") || null,
+      contentSubmittedAt: new Date(),
+      contentApproval: "pending",
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.booking.id, id));
+  await logEvent(id, actorTag(m), `skickade ${round} till kunden (${links.length} länk${links.length === 1 ? "" : "ar"})`);
+  await notify(id, { kind: "content_ready", byTeam: true });
+
+  revalidatePath(`/bookings/${id}`);
+  revalidatePath(`/campaigns/${cur.campaignId}`);
+  revalidatePath("/pipeline");
+  revalidatePath("/");
+  for (const t of await listAccessTokens({ campaignId: cur.campaignId })) revalidatePath(`/k/${t.token}`, "layout");
+}
+
 /** Kvitterar en ny ansökan så den försvinner ur "att granska". */
 export async function markCreatorReviewed(fd: FormData) {
   await requireStaff();

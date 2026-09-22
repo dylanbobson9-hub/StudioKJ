@@ -51,6 +51,7 @@ export type PortalBooking = {
   briefUrl: string | null;
   contentLinks: string[];
   contentNote: string | null;
+  contentApproval: string;
   approvalComment: string | null;
   trackingUrl: string | null;
   carrier: string | null;
@@ -134,6 +135,7 @@ export async function loadPortal(token: string): Promise<Portal | null> {
       briefUrl: r.b.briefUrl,
       contentLinks: r.b.contentLinks,
       contentNote: r.b.contentNote,
+      contentApproval: r.b.contentApproval,
       approvalComment: r.b.approvalComment,
       trackingUrl: r.b.trackingUrl,
       carrier: r.b.carrier,

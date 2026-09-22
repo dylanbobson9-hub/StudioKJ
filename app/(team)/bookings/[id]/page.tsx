@@ -4,6 +4,7 @@ import { PageHead, Card } from "@/components/ui";
 import { StagePill, HoldPill, Progress } from "@/components/pills";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { CopyLink } from "@/components/LinkPanel";
+import { SubmitButton } from "@/components/SubmitButton";
 import { getBooking, listBookingEvents, listAccessTokens } from "@/lib/queries";
 import {
   setStage,
@@ -16,6 +17,7 @@ import {
   setProduct,
   issueCreatorLink,
   revokeLink,
+  submitContentToClient,
 } from "@/lib/actions";
 import { APP_URL } from "@/lib/tokens";
 import { PHASES, STAGE_META, STAGES, fmtDur, progressPct, slaFor, stageIndex, ago } from "@/lib/stages";
@@ -158,6 +160,85 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[id]"
         </div>
       )}
 
+      {/* ---- Material till kunden: huvudsteget ---- */}
+      <Card className="mb-5">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="text-[11px] font-semibold tracking-[0.11em] uppercase" style={{ color: "var(--muted)" }}>
+            Material till kunden
+          </div>
+          {b.stage === "content_review" ? (
+            <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: "var(--warn-soft)", color: "var(--warn)" }}>
+              Kunden granskar
+            </span>
+          ) : b.contentApproval === "changes" ? (
+            <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: "var(--crit-soft)", color: "var(--crit)" }}>
+              Revidering begärd
+            </span>
+          ) : b.contentApproval === "approved" ? (
+            <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: "var(--good-soft)", color: "var(--good)" }}>
+              ✓ Godkänt av kunden
+            </span>
+          ) : null}
+        </div>
+
+        {/* Kundens revidering – det viktigaste på sidan när den finns */}
+        {b.contentApproval === "changes" && b.approvalComment && (
+          <div className="mb-3 rounded-lg border p-3" style={{ borderColor: "var(--crit)", background: "var(--crit-soft)" }}>
+            <div className="mb-1 text-[12px] font-semibold" style={{ color: "var(--crit)" }}>
+              Kunden vill ändra:
+            </div>
+            <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{b.approvalComment}</div>
+          </div>
+        )}
+
+        {b.contentLinks.length > 0 && (
+          <div className="mb-3">
+            <div className="mb-1 text-[11.5px]" style={{ color: "var(--muted)" }}>
+              {b.stage === "content_review" ? "Det kunden tittar på nu" : "Senast skickat"}
+            </div>
+            <div className="flex flex-col gap-1">
+              {b.contentLinks.map((l) => (
+                <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="text-[12.5px] break-all" style={{ color: "var(--accent)" }}>
+                  {l}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {b.contentApproval !== "approved" && (
+          <form action={submitContentToClient} className="flex flex-col gap-2">
+            <input type="hidden" name="bookingId" value={b.id} />
+            <textarea
+              name="links"
+              required
+              rows={2}
+              placeholder="Klistra in Drive-länken (flera går bra, en per rad)"
+              className="w-full rounded-lg border px-3 py-2 text-[13px]"
+              style={{ borderColor: "var(--line-2)", background: "var(--surface-2)" }}
+            />
+            <input
+              name="note"
+              placeholder="Meddelande till kunden (valfritt), t.ex. ”3 hooks att välja mellan”"
+              className="w-full rounded-lg border px-3 py-2 text-[13px]"
+              style={{ borderColor: "var(--line-2)", background: "var(--surface-2)" }}
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <SubmitButton
+                pendingLabel="Skickar…"
+                className="rounded-lg px-4 py-2 text-[13px] font-semibold"
+                style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
+              >
+                {b.contentApproval === "changes" ? "Skicka ny version till kunden" : "Skicka till kunden"}
+              </SubmitButton>
+              <span className="text-[11.5px]" style={{ color: "var(--muted)" }}>
+                Kolla att Drive-länken är delad som ”Alla med länken kan visa” – annars kommer kunden inte in.
+              </span>
+            </div>
+          </form>
+        )}
+      </Card>
+
       {/* ---- Flytta i flödet ---- */}
       <Card className="mb-5">
         <div className="mb-2.5 text-[11px] font-semibold tracking-[0.11em] uppercase" style={{ color: "var(--muted)" }}>
@@ -276,27 +357,6 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[id]"
           <Btn>Spara</Btn>
         </form>
       </Card>
-
-      {/* ---- Material från kreatören ---- */}
-      {b.contentLinks.length > 0 && (
-        <Card className="mb-5">
-          <div className="mb-2.5 text-[11px] font-semibold tracking-[0.11em] uppercase" style={{ color: "var(--muted)" }}>
-            Inskickat material
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {b.contentLinks.map((l) => (
-              <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="text-[12.5px] break-all" style={{ color: "var(--accent)" }}>
-                {l}
-              </a>
-            ))}
-          </div>
-          {b.contentNote && (
-            <p className="mt-2 text-[12.5px]" style={{ color: "var(--ink-2)" }}>
-              {b.contentNote}
-            </p>
-          )}
-        </Card>
-      )}
 
       {/* ---- Brief ---- */}
       <Card className="mb-5">

@@ -8,11 +8,11 @@ import {
   touchToken,
   clientDecideCreator,
   clientDecideBrief,
-  clientDecideContent,
   clientSetTracking,
 } from "@/lib/token-actions";
 import { ago } from "@/lib/stages";
 import { CopyAddress } from "@/components/CopyAddress";
+import { ContentReview } from "@/components/ContentReview";
 
 export const metadata = { title: "Uppdrag", robots: { index: false, follow: false } };
 
@@ -125,41 +125,21 @@ export default async function PortalBooking({ params }: PageProps<"/k/[token]/up
         </Card>
       )}
 
-      {/* --- Material --- */}
-      {b.contentLinks.length > 0 && (
+      {/* --- Material: granska, godkänn eller revidera --- */}
+      {(b.contentLinks.length > 0 || b.contentApproval === "changes") && (
         <Card className="mb-4">
-          <h2 className="mb-2 text-[13.5px] font-semibold">Material</h2>
-          <div className="flex flex-col gap-1.5">
-            {b.contentLinks.map((l) => (
-              <a
-                key={l}
-                href={l}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[12.5px] break-all"
-                style={{ color: "var(--accent)" }}
-              >
-                {l}
-              </a>
-            ))}
-          </div>
-          {b.contentNote && (
-            <p className="mt-2 text-[12.5px]" style={{ color: "var(--ink-2)" }}>
-              {b.contentNote}
-            </p>
-          )}
-          {b.stage === "content_review" && (
-            <Decision
-              token={token}
-              bookingId={b.id}
-              action={clientDecideContent}
-              heading="Godkänner ni materialet?"
-              approveLabel="Godkänn material"
-              rejectLabel="Begär ändring"
-              rejectPlaceholder="Vad ska justeras?"
-              rejectRequired
-            />
-          )}
+          <h2 className="mb-3 text-[15px] font-semibold">
+            {b.stage === "content_review" ? "Materialet är klart att granska" : "Material"}
+          </h2>
+          <ContentReview
+            token={token}
+            bookingId={b.id}
+            links={b.contentLinks}
+            note={b.contentNote}
+            stage={b.stage}
+            approval={b.contentApproval}
+            lastComment={b.approvalComment}
+          />
         </Card>
       )}
 
@@ -282,7 +262,7 @@ export default async function PortalBooking({ params }: PageProps<"/k/[token]/up
         </Card>
       )}
 
-      {b.approvalComment && (
+      {b.approvalComment && b.contentApproval !== "changes" && (
         <Card className="mb-4">
           <p className="text-[12.5px]" style={{ color: "var(--ink-2)" }}>
             <span style={{ color: "var(--muted)" }}>Er senaste kommentar: </span>
